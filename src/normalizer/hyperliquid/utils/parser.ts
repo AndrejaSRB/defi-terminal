@@ -1,0 +1,146 @@
+import type {
+	ActiveAssetData,
+	Candle,
+	OpenOrder,
+	OrderBook,
+	OrderType,
+	Position,
+	Prices,
+	Trade,
+} from '@/normalizer/types';
+import type {
+	ActiveAssetCtx,
+	AllMidsResponse,
+	AllDexsClearinghouseState,
+	HlCandle,
+	HlOpenOrdersResponse,
+	HlTrade,
+	L2BookEvent,
+} from '../types';
+
+export function parseOrderBook(raw: unknown): OrderBook {
+	const data = raw as L2BookEvent;
+	return {
+		bids: data.levels[0].map((l) => ({
+			price: parseFloat(l.px),
+			size: parseFloat(l.sz),
+		})),
+		asks: data.levels[1].map((l) => ({
+			price: parseFloat(l.px),
+			size: parseFloat(l.sz),
+		})),
+		timestamp: data.time,
+	};
+}
+
+export function parsePrices(raw: unknown): Prices {
+	const data = raw as Record<string, unknown>;
+	const mids = (data.mids ?? data) as AllMidsResponse;
+	return mids;
+}
+
+export function parseTrades(raw: unknown): Trade[] {
+	const data = raw as HlTrade[];
+	return data.map((t) => ({
+		id: t.tid.toString(),
+		coin: t.coin,
+		side: t.side === 'B' ? 'buy' : 'sell',
+		price: parseFloat(t.px),
+		size: parseFloat(t.sz),
+		timestamp: t.time,
+	}));
+}
+
+export function parseActiveAsset(raw: unknown): ActiveAssetData {
+	const data = raw as ActiveAssetCtx;
+	return {
+		coin: data.coin,
+		markPrice: data.ctx.markPx,
+		oraclePrice: data.ctx.oraclePx,
+		volume24h: data.ctx.dayNtlVlm,
+		openInterest: data.ctx.openInterest,
+		fundingRate: data.ctx.funding,
+		fundingInterval: '8h',
+	};
+}
+
+export function parseUserPositions(raw: unknown): Position[] {
+	const data = raw as AllDexsClearinghouseState;
+	return data.clearinghouseStates.flatMap(([dex, state]) =>
+		state.assetPositions.map(({ position: p }): Position => {
+			const size = parseFloat(p.szi);
+			const absSize = Math.abs(size);
+			return {
+				coin: dex ? `${dex}:${p.coin}` : p.coin,
+				size: absSize.toString(),
+				side: size >= 0 ? 'LONG' : 'SHORT',
+				entryPrice: p.entryPx,
+				unrealizedPnl: p.unrealizedPnl,
+				leverage: p.leverage.value.toString(),
+				liquidationPrice: p.liquidationPx,
+				marginUsed: p.marginUsed,
+				funding: p.cumFunding.sinceOpen,
+				tp: null,
+				sl: null,
+			};
+		}),
+	);
+}
+
+const HL_ORDER_TYPE_MAP: Record<string, OrderType> = {
+	Limit: 'limit',
+	Market: 'market',
+	'Take Profit Market': 'tp_market',
+	'Stop Market': 'sl_market',
+	'Take Profit Limit': 'tp',
+	'Stop Limit': 'sl',
+};
+
+export function parseUserOpenOrders(raw: unknown): OpenOrder[] {
+	const data = raw as HlOpenOrdersResponse;
+	return data.orders.map((o): OpenOrder => {
+		const tpChild = o.children.find((c) =>
+			c.orderType.startsWith('Take Profit'),
+		);
+		const slChild = o.children.find((c) => c.orderType.startsWith('Stop'));
+
+		return {
+			id: o.oid.toString(),
+			coin: o.coin,
+			side: o.side === 'B' ? 'buy' : 'sell',
+			price: parseFloat(o.limitPx),
+			size: parseFloat(o.sz),
+			origSize: parseFloat(o.origSz),
+			filledSize: parseFloat(o.origSz) - parseFloat(o.sz),
+			isReduceOnly: o.reduceOnly,
+			orderType: HL_ORDER_TYPE_MAP[o.orderType] ?? 'limit',
+			triggerPrice: o.isTrigger ? parseFloat(o.triggerPx) : null,
+			triggerCondition:
+				o.triggerCondition !== 'N/A' ? o.triggerCondition : null,
+			tp: tpChild ? parseFloat(tpChild.triggerPx) : null,
+			sl: slChild ? parseFloat(slChild.triggerPx) : null,
+			status: 'open',
+			timestamp: o.timestamp,
+		};
+	});
+}
+
+export function parseCandles(raw: unknown): Candle[] {
+	const data = raw as HlCandle[];
+	return data.map(parseSingleCandle);
+}
+
+export function parseCandle(raw: unknown): Candle {
+	return parseSingleCandle(raw as HlCandle);
+}
+
+function parseSingleCandle(c: HlCandle): Candle {
+	return {
+		time: c.t,
+		open: c.o,
+		high: c.h,
+		low: c.l,
+		close: c.c,
+		volume: c.v,
+	};
+}
