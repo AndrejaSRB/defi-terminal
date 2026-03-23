@@ -5,12 +5,14 @@ import { activeAssetDataAtom } from '@/atoms/active-asset';
 import { allAssetCtxsAtom } from '@/atoms/all-asset-ctxs';
 import { activeNormalizerAtom } from '@/atoms/dex';
 import { parseTokenName } from '@/lib/token';
+import { pricesAtom } from '@/atoms/prices';
 
 export function useTokenHeaderData() {
 	const token = useAtomValue(activeTokenAtom);
 	const wsAsset = useAtomValue(activeAssetDataAtom);
 	const allCtxs = useAtomValue(allAssetCtxsAtom);
 	const normalizer = useAtomValue(activeNormalizerAtom);
+	const prices = useAtomValue(pricesAtom);
 
 	return useMemo(() => {
 		const { formattedTokenName, dexName } = parseTokenName(token);
@@ -33,7 +35,7 @@ export function useTokenHeaderData() {
 			};
 		}
 
-		const mark = parseFloat(asset.markPrice);
+		const mark = parseFloat(prices[token]);
 		const oracle = parseFloat(asset.oraclePrice);
 		const prevDay = parseFloat(asset.prevDayPx);
 		const vol = parseFloat(asset.volume24h);
