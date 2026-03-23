@@ -1,4 +1,8 @@
-import type { AggregationLevel, AssetMeta } from '@/normalizer/types';
+import type {
+	ActiveAssetData,
+	AggregationLevel,
+	AssetMeta,
+} from '@/normalizer/types';
 import type {
 	ChannelDescriptor,
 	DexNormalizer,
@@ -9,6 +13,10 @@ import {
 	formatPrice as hlFormatPrice,
 	formatSize as hlFormatSize,
 } from './utils/format';
+import type {
+	HlAllPerpMetasResponse,
+	HlMetaAndAssetCtxsResponse,
+} from './types';
 import { getAggregationLevels } from './utils/aggregation';
 import {
 	parseActiveAsset,
@@ -142,29 +150,24 @@ export const hyperliquidNormalizer: DexNormalizer = {
 		const res = await fetch(HL_INFO_URL, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ type: 'metaAndAssetCtxs' }),
+			body: JSON.stringify({ type: 'allPerpMetas' }),
 		});
-		const [meta] = (await res.json()) as [
-			{
-				universe: {
-					name: string;
-					szDecimals: number;
-					maxLeverage: number;
-					onlyIsolated: boolean;
-				}[];
-			},
-		];
+		const groups = (await res.json()) as HlAllPerpMetasResponse;
 
 		const assetMetaMap = new Map<string, AssetMeta>();
 
-		for (const asset of meta.universe) {
-			szDecimalsMap.set(asset.name, asset.szDecimals);
-			assetMetaMap.set(asset.name, {
-				name: asset.name,
-				szDecimals: asset.szDecimals,
-				maxLeverage: asset.maxLeverage,
-				onlyIsolated: asset.onlyIsolated,
-			});
+		for (const group of groups) {
+			for (const asset of group.universe) {
+				if (asset.isDelisted) continue;
+
+				szDecimalsMap.set(asset.name, asset.szDecimals);
+				assetMetaMap.set(asset.name, {
+					name: asset.name,
+					szDecimals: asset.szDecimals,
+					maxLeverage: asset.maxLeverage,
+					onlyIsolated: asset.onlyIsolated ?? false,
+				});
+			}
 		}
 
 		return assetMetaMap;
@@ -319,5 +322,35 @@ export const hyperliquidNormalizer: DexNormalizer = {
 			}),
 		});
 		return parseCandles(await res.json());
+	},
+
+	fetchAllAssetCtxs: async () => {
+		const res = await fetch(HL_INFO_URL, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ type: 'metaAndAssetCtxs' }),
+		});
+		const [meta, assetCtxs] = (await res.json()) as HlMetaAndAssetCtxsResponse;
+
+		const result = new Map<string, ActiveAssetData>();
+
+		for (let i = 0; i < meta.universe.length; i++) {
+			const asset = meta.universe[i];
+			const ctx = assetCtxs[i];
+			if (asset.isDelisted || !ctx?.markPx) continue;
+
+			result.set(asset.name, {
+				coin: asset.name,
+				markPrice: ctx.markPx,
+				oraclePrice: ctx.oraclePx,
+				prevDayPx: ctx.prevDayPx,
+				volume24h: ctx.dayNtlVlm,
+				openInterest: ctx.openInterest,
+				fundingRate: ctx.funding,
+				fundingInterval: '8h',
+			});
+		}
+
+		return result;
 	},
 };

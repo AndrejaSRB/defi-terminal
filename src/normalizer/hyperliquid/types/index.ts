@@ -8,3 +8,10 @@ export type {
 export type { L2BookEvent } from './l2-book';
 export type { HlOpenOrder, HlOpenOrdersResponse } from './open-order';
 export type { HlTrade } from './trade';
+export type {
+	HlPerpMeta,
+	HlPerpMetaGroup,
+	HlAllPerpMetasResponse,
+	HlRestAssetCtx,
+	HlMetaAndAssetCtxsResponse,
+} from './api';

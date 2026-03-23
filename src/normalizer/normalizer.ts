@@ -99,4 +99,5 @@ export interface DexNormalizer {
 		startTime?: number,
 		endTime?: number,
 	) => Promise<Candle[]>;
+	fetchAllAssetCtxs: () => Promise<Map<string, ActiveAssetData>>;
 }

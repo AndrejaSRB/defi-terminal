@@ -2,17 +2,24 @@ import { useMemo } from 'react';
 import { useAtomValue } from 'jotai';
 import { activeTokenAtom } from '@/atoms/active-token';
 import { activeAssetDataAtom } from '@/atoms/active-asset';
+import { allAssetCtxsAtom } from '@/atoms/all-asset-ctxs';
 import { activeNormalizerAtom } from '@/atoms/dex';
+import { parseTokenName } from '@/lib/token';
 
 export function useTokenHeaderData() {
 	const token = useAtomValue(activeTokenAtom);
-	const asset = useAtomValue(activeAssetDataAtom);
+	const wsAsset = useAtomValue(activeAssetDataAtom);
+	const allCtxs = useAtomValue(allAssetCtxsAtom);
 	const normalizer = useAtomValue(activeNormalizerAtom);
 
 	return useMemo(() => {
+		const { formattedTokenName, dexName } = parseTokenName(token);
+		const asset = wsAsset ?? allCtxs.get(token) ?? null;
+
 		if (!asset) {
 			return {
-				symbol: token,
+				symbol: formattedTokenName,
+				dexName,
 				markPrice: '--',
 				oraclePrice: '--',
 				change24h: '--',
@@ -37,7 +44,8 @@ export function useTokenHeaderData() {
 		const changePxValue = mark - prevDay;
 
 		return {
-			symbol: token,
+			symbol: formattedTokenName,
+			dexName,
 			markPrice: normalizer.formatPrice(mark, token),
 			oraclePrice: normalizer.formatPrice(oracle, token),
 			change24h: `${changeValue >= 0 ? '+' : ''}${changeValue.toFixed(2)}%`,
@@ -49,5 +57,5 @@ export function useTokenHeaderData() {
 			fundingInterval: asset.fundingInterval,
 			isLoading: false,
 		};
-	}, [token, asset, normalizer]);
+	}, [token, wsAsset, allCtxs, normalizer]);
 }
