@@ -2,7 +2,8 @@ import { Search } from 'lucide-react';
 import {
 	useTokenSelectorData,
 	type TokenRow,
-} from '@/hooks/use-token-selector-data';
+} from './hooks/use-token-selector-data';
+import { cn } from '@/lib/utils';
 import { sentimentColor } from '@/lib/colors';
 
 interface TokenSelectorProps {
@@ -74,7 +75,10 @@ export function TokenSelector({ onSelect, onClose }: TokenSelectorProps) {
 							</span>
 							<span className="text-right">{token.markPrice}</span>
 							<span
-								className={`hidden text-right lg:block ${sentimentColor(token.change24hValue)}`}
+								className={cn(
+									'hidden text-right lg:block',
+									sentimentColor(token.change24hValue),
+								)}
 							>
 								{token.change24h}
 							</span>

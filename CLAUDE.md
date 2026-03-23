@@ -106,9 +106,11 @@ Always structure non-trivial frontend code as:
 
 #### Hooks (`src/hooks/`)
 - Orchestrate services + data layer
-- Tier 1: global data pumps (in providers)
+- Tier 1: global data pumps (in providers) — live in `src/hooks/`
 - Tier 2: feature-specific, read atoms + normalizer.format → display-ready
 - Do not own reusable business logic
+- **Only shared/global hooks live in `src/hooks/`** (Tier 1, `useMediaQuery`, `useDocumentTitle`)
+- **Component-specific hooks live in `component-folder/hooks/`** next to the component that uses them
 
 #### Providers (`src/providers/`)
 - Mount Tier 1 hooks
@@ -143,6 +145,7 @@ If logic is in the wrong place, move it downward:
 - No formatted strings in atoms
 - No reusable mapping/formatting in components
 - No heavy data manipulation in hooks
+- **Never define 2+ components in the same file** — each component gets its own file
 - No framework-specific code in services or normalizer
 - No raw backend response shapes leaking directly into UI
 

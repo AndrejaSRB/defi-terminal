@@ -1,10 +1,11 @@
 import { useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { useTokenHeaderExpand } from '@/hooks/use-token-header-expand';
-import { useTokenHeaderData } from '@/hooks/use-token-header-data';
-import { useTokenSelector } from '@/hooks/use-token-selector';
+import { cn } from '@/lib/utils';
+import { useTokenHeaderExpand } from './hooks/use-token-header-expand';
+import { useTokenHeaderData } from './hooks/use-token-header-data';
+import { useTokenSelector } from './hooks/use-token-selector';
 import { sentimentColor } from '@/lib/colors';
-import { TokenSelector } from '@/components/panels/token-selector';
+import { TokenSelector } from './token-selector';
 
 export function TokenHeader() {
 	const { isExpanded, toggle } = useTokenHeaderExpand();
@@ -30,7 +31,10 @@ export function TokenHeader() {
 						</span>
 					)}
 					<ChevronDown
-						className={`size-4 text-muted-foreground transition-transform duration-200 ${selector.isOpen ? 'rotate-180' : ''}`}
+						className={cn(
+							'size-4 text-muted-foreground transition-transform duration-200',
+							selector.isOpen && 'rotate-180',
+						)}
 					/>
 				</button>
 
@@ -92,7 +96,10 @@ export function TokenHeader() {
 						<span className={changeColor}>{data.change24h}</span>
 						<span className="text-sm font-medium">{data.markPrice}</span>
 						<ChevronDown
-							className={`size-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+							className={cn(
+								'size-4 text-muted-foreground transition-transform duration-200',
+								isExpanded && 'rotate-180',
+							)}
 						/>
 					</button>
 				</div>

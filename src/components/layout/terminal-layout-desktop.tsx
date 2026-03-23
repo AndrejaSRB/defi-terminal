@@ -4,10 +4,10 @@ import {
 	ResizablePanelGroup,
 } from '@/components/ui/resizable';
 import { TopBar } from './top-bar';
-import { TokenHeader } from './token-header';
+import { TokenHeader } from './token-header/token-header';
 import { StatusBar } from './status-bar';
 import { ChartPanel } from '@/components/panels/chart-panel';
-import { OrderbookPanel } from '@/components/panels/orderbook-panel';
+import { OrderbookPanel } from '@/components/panels/orderbook/orderbook-panel';
 import { OrderFormPanel } from '@/components/panels/order-form-panel';
 import { RecordsPanel } from '@/components/panels/records-panel';
 import { AccountPanel } from '@/components/panels/account-panel';
@@ -58,8 +58,8 @@ export function TerminalLayoutDesktop() {
 						{/* Records */}
 						<ResizablePanel
 							id="records-section"
-							defaultSize={isXl ? 290 : 200}
-							minSize={120}
+							defaultSize={275}
+							minSize={275}
 						>
 							<div className="relative h-full overflow-hidden rounded-sm border border-border bg-card">
 								<RecordsPanel />

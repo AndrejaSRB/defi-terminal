@@ -1,4 +1,5 @@
-import { useStatusBarData } from '@/hooks/use-status-bar-data';
+import { cn } from '@/lib/utils';
+import { useStatusBarData } from './use-status-bar-data';
 
 const STATUS_COLORS = {
 	online: 'bg-green-500',
@@ -20,9 +21,12 @@ export function StatusBar() {
 			</div>
 			<div className="flex items-center gap-2">
 				<span
-					className={`inline-block size-1.5 rounded-full ${STATUS_COLORS[connectionStatus]}`}
+					className={cn(
+						'inline-block size-1.5 rounded-full',
+						STATUS_COLORS[connectionStatus],
+					)}
 				/>
-				<span className="capitalize font-mono">{connectionStatus}</span>
+				<span className="font-mono capitalize">{connectionStatus}</span>
 			</div>
 		</div>
 	);

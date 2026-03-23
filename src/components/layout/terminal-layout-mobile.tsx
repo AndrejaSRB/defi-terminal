@@ -1,8 +1,8 @@
 import { TopBar } from './top-bar';
-import { TokenHeader } from './token-header';
+import { TokenHeader } from './token-header/token-header';
 import { StatusBar } from './status-bar';
 import { ChartPanel } from '@/components/panels/chart-panel';
-import { OrderbookPanel } from '@/components/panels/orderbook-panel';
+import { OrderbookPanel } from '@/components/panels/orderbook/orderbook-panel';
 import { OrderFormPanel } from '@/components/panels/order-form-panel';
 import { RecordsPanel } from '@/components/panels/records-panel';
 import { AccountPanel } from '@/components/panels/account-panel';

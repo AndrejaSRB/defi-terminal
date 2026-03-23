@@ -539,13 +539,34 @@ class TradingWebSocket {
 
 	private handleOnline = () => {
 		this.reconnectAttempt = 0;
+		// Clear any stale reconnect timers from before offline
+		if (this.reconnectTimer) {
+			clearTimeout(this.reconnectTimer);
+			this.reconnectTimer = null;
+		}
 		if (this.ws?.readyState !== WebSocket.OPEN) {
 			this.connect();
 		}
 	};
 
 	private handleOffline = () => {
-		this.disconnect();
+		this.clearAllTimers();
+		this.connectLock = false;
+		this.reconnectAttempt = 0;
+		if (this.ws) {
+			this.ws.onopen = null;
+			this.ws.onmessage = null;
+			this.ws.onclose = null;
+			this.ws.onerror = null;
+			if (
+				this.ws.readyState === WebSocket.OPEN ||
+				this.ws.readyState === WebSocket.CONNECTING
+			) {
+				this.ws.close(CLOSE_CODES.NORMAL);
+			}
+			this.ws = null;
+		}
+		this.setState('disconnected');
 	};
 
 	// Bug fix #3: only reconnect if actually stale, not on every tab focus
