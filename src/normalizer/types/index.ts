@@ -88,6 +88,7 @@ export interface ActiveAssetData {
 	coin: string;
 	markPrice: string;
 	oraclePrice: string;
+	prevDayPx: string;
 	volume24h: string;
 	openInterest: string;
 	fundingRate: string;

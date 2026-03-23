@@ -57,6 +57,7 @@ export function parseActiveAsset(raw: unknown): ActiveAssetData {
 		coin: data.coin,
 		markPrice: data.ctx.markPx,
 		oraclePrice: data.ctx.oraclePx,
+		prevDayPx: data.ctx.prevDayPx,
 		volume24h: data.ctx.dayNtlVlm,
 		openInterest: data.ctx.openInterest,
 		fundingRate: data.ctx.funding,

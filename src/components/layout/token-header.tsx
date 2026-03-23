@@ -1,43 +1,53 @@
 import { useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useTokenHeaderExpand } from '@/hooks/use-token-header-expand';
+import { useTokenHeaderData } from '@/hooks/use-token-header-data';
+import { sentimentColor } from '@/lib/colors';
 
 export function TokenHeader() {
 	const { isExpanded, toggle } = useTokenHeaderExpand();
 	const contentRef = useRef<HTMLDivElement>(null);
+	const data = useTokenHeaderData();
+
+	const changeColor = sentimentColor(data.change24hValue);
 
 	return (
 		<div className="shrink-0 border-b border-border">
 			{/* Desktop */}
-			<div className="relative hidden h-12 items-center lg:flex">
-				<div className="flex shrink-0 items-center gap-2 px-3">
-					<span className="text-sm font-bold">BTC-USDC</span>
+			<div className="relative hidden items-center lg:flex">
+				<div className="flex shrink-0 items-center gap-2 px-4 py-2">
+					<span className="text-lg font-semibold">{data.symbol}-USDC</span>
+					<ChevronDown className="size-4 text-muted-foreground" />
 				</div>
 
-				<div className="flex items-center gap-5 overflow-x-auto text-xs scrollbar-none">
-					<div className="shrink-0 whitespace-nowrap">
+				<div className="flex items-center gap-8 overflow-x-auto text-sm no-scrollbar">
+					<div className="flex shrink-0 flex-col whitespace-nowrap text-xs">
 						<span className="text-muted-foreground">Mark</span>
-						<span className="ml-1.5 text-foreground">--</span>
+						<span className="text-foreground">{data.markPrice}</span>
 					</div>
-					<div className="shrink-0 whitespace-nowrap">
+					<div className="flex shrink-0 flex-col whitespace-nowrap text-xs">
 						<span className="text-muted-foreground">Oracle</span>
-						<span className="ml-1.5 text-foreground">--</span>
+						<span className="text-foreground">{data.oraclePrice}</span>
 					</div>
-					<div className="shrink-0 whitespace-nowrap">
+					<div className="flex shrink-0 flex-col whitespace-nowrap text-xs">
 						<span className="text-muted-foreground">24h Change</span>
-						<span className="ml-1.5 text-foreground">--</span>
+						<span className={changeColor}>
+							{data.changePx} / {data.change24h}
+						</span>
 					</div>
-					<div className="shrink-0 whitespace-nowrap">
+					<div className="flex shrink-0 flex-col whitespace-nowrap text-xs">
 						<span className="text-muted-foreground">24h Vol</span>
-						<span className="ml-1.5 text-foreground">--</span>
+						<span className="text-foreground">{data.volume24h}</span>
 					</div>
-					<div className="shrink-0 whitespace-nowrap">
+					<div className="flex shrink-0 flex-col whitespace-nowrap text-xs">
 						<span className="text-muted-foreground">Open Interest</span>
-						<span className="ml-1.5 text-foreground">--</span>
+						<span className="text-foreground">{data.openInterest}</span>
 					</div>
-					<div className="shrink-0 whitespace-nowrap pr-6">
-						<span className="text-muted-foreground">Funding</span>
-						<span className="ml-1.5 text-foreground">--</span>
+					<div className="flex shrink-0 flex-col whitespace-nowrap pr-8 text-xs">
+						<span className="text-muted-foreground">Funding / Countdown</span>
+						<span className={sentimentColor(0)}>
+							{data.fundingRate} / {data.fundingInterval}
+						</span>
 					</div>
 				</div>
 
@@ -52,12 +62,12 @@ export function TokenHeader() {
 					className="flex w-full items-center justify-between px-3 py-2"
 				>
 					<div className="flex items-center gap-2">
-						<span className="text-sm font-bold">BTC</span>
+						<span className="text-sm font-bold">{data.symbol}</span>
 						<ChevronDown className="size-4 text-muted-foreground" />
 					</div>
 					<div className="flex items-center gap-3">
-						<span className="text-xs text-green-400">+3.04%</span>
-						<span className="text-sm font-medium">--</span>
+						<span className={`${changeColor}`}>{data.change24h}</span>
+						<span className="text-sm font-medium">{data.markPrice}</span>
 						<ChevronDown
 							className={`size-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
 						/>
@@ -77,21 +87,21 @@ export function TokenHeader() {
 					<div className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-border px-3 py-2 text-xs">
 						<div>
 							<span className="text-muted-foreground">Oracle</span>
-							<div className="text-foreground">--</div>
+							<div className="text-foreground">{data.oraclePrice}</div>
 						</div>
 						<div className="text-right">
 							<span className="text-muted-foreground">24h Volume</span>
-							<div className="text-foreground">--</div>
+							<div className="text-foreground">{data.volume24h}</div>
 						</div>
 						<div>
 							<span className="text-muted-foreground">Open Interest</span>
-							<div className="text-foreground">--</div>
+							<div className="text-foreground">{data.openInterest}</div>
 						</div>
 						<div className="text-right">
-							<span className="text-muted-foreground">
-								Next Funding / Countdown
-							</span>
-							<div className="text-foreground">--</div>
+							<span className="text-muted-foreground">Funding</span>
+							<div className="text-foreground">
+								{data.fundingRate} / {data.fundingInterval}
+							</div>
 						</div>
 					</div>
 				</div>
