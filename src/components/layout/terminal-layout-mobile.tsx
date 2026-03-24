@@ -4,7 +4,7 @@ import { StatusBar } from './status-bar';
 import { ChartPanel } from '@/components/panels/chart/chart-panel';
 import { OrderbookPanel } from '@/components/panels/orderbook/orderbook-panel';
 import { OrderFormPanel } from '@/components/panels/order-form-panel';
-import { RecordsPanel } from '@/components/panels/records-panel';
+import { RecordsPanel } from '@/components/panels/records/records-panel';
 import { AccountPanel } from '@/components/panels/account-panel';
 
 export function TerminalLayoutMobile() {
@@ -20,7 +20,7 @@ export function TerminalLayoutMobile() {
 				</div>
 
 				{/* Orderbook + Order Form */}
-				<div className="flex min-h-[400px] border-b border-border">
+				<div className="flex max-h-[470px] border-b border-border">
 					<div className="w-1/2 border-r border-border">
 						<OrderbookPanel />
 					</div>

@@ -1,18 +1,25 @@
+import { useAtomValue } from 'jotai';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { userPositionsAtom } from '@/atoms/user/positions';
+import { userOpenOrdersAtom } from '@/atoms/user/orders';
+import { PositionsContent } from './positions-content';
 
 export function RecordsPanel() {
+	const positions = useAtomValue(userPositionsAtom);
+	const orders = useAtomValue(userOpenOrdersAtom);
+
+	const posCount = positions.length;
+	const orderCount = orders.length;
+
 	return (
-		<Tabs defaultValue="balances" className="flex h-full flex-col gap-0">
+		<Tabs defaultValue="positions" className="flex h-full flex-col gap-0">
 			<div className="relative shrink-0">
 				<TabsList variant="line" className="h-8 rounded-none px-2">
-					<TabsTrigger value="balances" className="text-xs">
-						Balances
-					</TabsTrigger>
 					<TabsTrigger value="positions" className="text-xs">
-						Positions
+						Positions{posCount > 0 ? ` (${posCount})` : ''}
 					</TabsTrigger>
 					<TabsTrigger value="orders" className="text-xs">
-						Open Orders
+						Open Orders{orderCount > 0 ? ` (${orderCount})` : ''}
 					</TabsTrigger>
 					<TabsTrigger value="history" className="text-xs">
 						Trade History
@@ -27,15 +34,8 @@ export function RecordsPanel() {
 					}}
 				/>
 			</div>
-			<TabsContent value="balances" className="flex-1 overflow-auto">
-				<div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-					Balances
-				</div>
-			</TabsContent>
 			<TabsContent value="positions" className="flex-1 overflow-auto">
-				<div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-					Positions
-				</div>
+				<PositionsContent />
 			</TabsContent>
 			<TabsContent value="orders" className="flex-1 overflow-auto">
 				<div className="flex h-full items-center justify-center text-sm text-muted-foreground">

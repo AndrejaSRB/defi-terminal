@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { sentimentColor } from '@/lib/colors';
 import { useStatusBarData } from './use-status-bar-data';
 
 const STATUS_COLORS = {
@@ -8,15 +9,27 @@ const STATUS_COLORS = {
 } as const;
 
 export function StatusBar() {
-	const { connectionStatus, dexName } = useStatusBarData();
+	const {
+		connectionStatus,
+		dexName,
+		totalOpen,
+		totalLongs,
+		totalShorts,
+		totalPnl,
+		totalPnlValue,
+		orderCount,
+	} = useStatusBarData();
 
 	return (
 		<div className="flex h-7 items-center justify-between border-t border-border px-3 text-xs text-muted-foreground">
 			<div className="flex items-center gap-4 font-mono">
-				<span>Open: $0</span>
-				<span>Longs: $0</span>
-				<span>Shorts: $0</span>
-				<span>Orders: 0</span>
+				<span className="hidden lg:inline">Open: {totalOpen}</span>
+				<span className="hidden lg:inline">Longs: {totalLongs}</span>
+				<span className="hidden lg:inline">Shorts: {totalShorts}</span>
+				<span className={cn('hidden lg:inline', sentimentColor(totalPnlValue))}>
+					UPnL: {totalPnl}
+				</span>
+				<span className="hidden lg:inline">Orders: {orderCount}</span>
 				<span>DEX: {dexName}</span>
 			</div>
 			<div className="flex items-center gap-2">
