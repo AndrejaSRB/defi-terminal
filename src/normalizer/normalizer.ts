@@ -63,6 +63,7 @@ export interface DexNormalizer {
 		candles: (coin: string, interval: string) => ChannelDescriptor;
 		userPositions: (address: string) => ChannelDescriptor;
 		userOpenOrders: (address: string) => ChannelDescriptor;
+		allAssetCtxs?: () => ChannelDescriptor;
 	};
 
 	// Protocol — used by hooks and assembled into ProtocolHooks for WS
@@ -89,6 +90,7 @@ export interface DexNormalizer {
 	parseUserOpenOrders: (raw: unknown) => OpenOrder[];
 	parseCandles: (raw: unknown) => Candle[];
 	parseCandle: (raw: unknown) => Candle;
+	parseAllAssetCtxs?: (raw: unknown) => Map<string, ActiveAssetData>;
 
 	// REST snapshot fetchers
 	fetchOrderBook: (coin: string, agg?: AggregationLevel) => Promise<OrderBook>;

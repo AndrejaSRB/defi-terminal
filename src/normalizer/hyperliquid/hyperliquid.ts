@@ -16,6 +16,7 @@ import {
 import type {
 	HlAllPerpMetasResponse,
 	HlMetaAndAssetCtxsResponse,
+	HlWsAllDexsAssetCtxs,
 } from './types';
 import { getAggregationLevels } from './utils/aggregation';
 import {
@@ -37,7 +38,8 @@ type HLChannelDescriptor =
 	| { type: 'activeAssetCtx'; coin: string }
 	| { type: 'allDexsClearinghouseState'; user: string }
 	| { type: 'openOrders'; user: string; dex: string }
-	| { type: 'candle'; coin: string; interval: string };
+	| { type: 'candle'; coin: string; interval: string }
+	| { type: 'allDexsAssetCtxs' };
 
 const HL_INFO_URL = 'https://api.hyperliquid.xyz/info';
 
@@ -50,6 +52,10 @@ const activeL2Channels = new Map<string, string>();
 
 // Tracks the allMids channel key — server doesn't echo dex param back.
 let activeAllMidsChannel = 'allMids';
+
+// Ordered universe per DEX group — needed to map WS array indices to coin names.
+// Populated during init(). Includes delisted tokens for index alignment.
+const universeOrder: string[][] = [];
 
 // ── Channel Key ─────────────────────────────────────────────────────
 
@@ -74,6 +80,8 @@ function hlChannelKey(desc: ChannelDescriptor): string {
 			return `openOrders:${d.user}:${d.dex}`;
 		case 'candle':
 			return `candle:${d.coin}:${d.interval}`;
+		case 'allDexsAssetCtxs':
+			return 'allDexsAssetCtxs';
 		default:
 			return desc.type;
 	}
@@ -155,9 +163,12 @@ export const hyperliquidNormalizer: DexNormalizer = {
 		const groups = (await res.json()) as HlAllPerpMetasResponse;
 
 		const assetMetaMap = new Map<string, AssetMeta>();
+		universeOrder.length = 0;
 
 		for (const group of groups) {
+			const coins: string[] = [];
 			for (const asset of group.universe) {
+				coins.push(asset.name);
 				if (asset.isDelisted) continue;
 
 				szDecimalsMap.set(asset.name, asset.szDecimals);
@@ -168,6 +179,7 @@ export const hyperliquidNormalizer: DexNormalizer = {
 					onlyIsolated: asset.onlyIsolated ?? false,
 				});
 			}
+			universeOrder.push(coins);
 		}
 
 		return assetMetaMap;
@@ -201,6 +213,7 @@ export const hyperliquidNormalizer: DexNormalizer = {
 			user: address.toLowerCase(),
 			dex: 'ALL_DEXS',
 		}),
+		allAssetCtxs: () => ({ type: 'allDexsAssetCtxs' }),
 	},
 
 	// Protocol
@@ -242,6 +255,8 @@ export const hyperliquidNormalizer: DexNormalizer = {
 			return parseWsUserPositions(msg.data);
 		if (type === 'openOrders') return parseWsOpenOrders(msg.data);
 		if (type === 'candle') return parseWsCandle(msg.data);
+		if (type === 'allDexsAssetCtxs')
+			return { channel: 'allDexsAssetCtxs', payload: msg.data };
 
 		// Default: per-coin channels (activeAssetCtx, etc.)
 		const data = msg.data as Record<string, unknown>;
@@ -349,6 +364,36 @@ export const hyperliquidNormalizer: DexNormalizer = {
 				fundingRate: ctx.funding,
 				fundingInterval: '8h',
 			});
+		}
+
+		return result;
+	},
+
+	parseAllAssetCtxs: (raw: unknown) => {
+		const data = raw as HlWsAllDexsAssetCtxs;
+		const result = new Map<string, ActiveAssetData>();
+
+		for (let gi = 0; gi < data.ctxs.length; gi++) {
+			const [, ctxs] = data.ctxs[gi];
+			const coins = universeOrder[gi];
+			if (!coins || !ctxs) continue;
+
+			for (let i = 0; i < ctxs.length; i++) {
+				const coin = coins[i];
+				const ctx = ctxs[i];
+				if (!coin || !ctx) continue;
+
+				result.set(coin, {
+					coin,
+					markPrice: String(ctx.markPx),
+					oraclePrice: String(ctx.oraclePx),
+					prevDayPx: String(ctx.prevDayPx),
+					volume24h: String(ctx.dayNtlVlm),
+					openInterest: String(ctx.openInterest),
+					fundingRate: String(ctx.funding),
+					fundingInterval: '8h',
+				});
+			}
 		}
 
 		return result;

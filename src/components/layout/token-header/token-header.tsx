@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { useTokenHeaderExpand } from './hooks/use-token-header-expand';
 import { useTokenHeaderData } from './hooks/use-token-header-data';
 import { useTokenSelector } from './hooks/use-token-selector';
+import { usePriceFlash } from './hooks/use-price-flash';
 import { sentimentColor } from '@/lib/colors';
 import { TokenSelector } from './token-selector';
 
@@ -12,6 +13,7 @@ export function TokenHeader() {
 	const contentRef = useRef<HTMLDivElement>(null);
 	const data = useTokenHeaderData();
 	const selector = useTokenSelector();
+	const priceRef = usePriceFlash(data.markPriceRaw);
 
 	const changeColor = sentimentColor(data.change24hValue);
 
@@ -41,7 +43,9 @@ export function TokenHeader() {
 				<div className="flex items-center gap-8 overflow-x-auto text-sm no-scrollbar">
 					<div className="flex shrink-0 flex-col whitespace-nowrap text-xs">
 						<span className="text-muted-foreground">Mark</span>
-						<span className="text-foreground">{data.markPrice}</span>
+						<span ref={priceRef} className="text-foreground">
+							{data.markPrice}
+						</span>
 					</div>
 					<div className="flex shrink-0 flex-col whitespace-nowrap text-xs">
 						<span className="text-muted-foreground">Oracle</span>
@@ -69,7 +73,7 @@ export function TokenHeader() {
 					</div>
 				</div>
 
-				<div className="pointer-events-none absolute bottom-0 right-0 top-0 w-8 bg-gradient-to-l from-background to-transparent" />
+				<div className="pointer-events-none absolute bottom-0 right-0 top-0 w-8 bg-linear-to-l from-background to-transparent" />
 			</div>
 
 			{/* Mobile */}

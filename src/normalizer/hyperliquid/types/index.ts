@@ -14,4 +14,6 @@ export type {
 	HlAllPerpMetasResponse,
 	HlRestAssetCtx,
 	HlMetaAndAssetCtxsResponse,
+	HlWsPerpsAssetCtx,
+	HlWsAllDexsAssetCtxs,
 } from './api';

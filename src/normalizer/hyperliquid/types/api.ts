@@ -42,3 +42,19 @@ export interface HlRestAssetCtx {
 }
 
 export type HlMetaAndAssetCtxsResponse = [HlPerpMetaGroup, HlRestAssetCtx[]];
+
+// ── allDexsAssetCtxs WS response ────────────────────────────────────
+
+export interface HlWsPerpsAssetCtx {
+	dayNtlVlm: number;
+	prevDayPx: number;
+	markPx: number;
+	midPx?: number;
+	funding: number;
+	openInterest: number;
+	oraclePx: number;
+}
+
+export interface HlWsAllDexsAssetCtxs {
+	ctxs: [string, HlWsPerpsAssetCtx[]][];
+}

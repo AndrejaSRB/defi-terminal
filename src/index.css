@@ -104,4 +104,22 @@
       display: none;
     }
   }
+
+  .flash-up {
+    animation: flash-up 600ms ease-out;
+  }
+
+  .flash-down {
+    animation: flash-down 600ms ease-out;
+  }
+}
+
+@keyframes flash-up {
+  0% { color: #4ade80; }
+  100% { color: inherit; }
+}
+
+@keyframes flash-down {
+  0% { color: #f87171; }
+  100% { color: inherit; }
 }
