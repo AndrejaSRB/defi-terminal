@@ -1,0 +1,333 @@
+/**
+ * TradingView Chart Custom Styles
+ * Official documentation: https://www.tradingview.com/charting-library-docs/latest/customization/theme/
+ */
+
+/* ============================================
+   LIGHT THEME (Default)
+   ============================================ */
+   :root:not(.theme-dark) {
+    /* Main backgrounds */
+    --tv-color-platform-background: #fafafa !important;
+    --tv-color-pane-background: #fafafa !important;
+    --tv-color-toolbar-background: #fafafa !important;
+    --tv-color-toolbar-toggle-button-background-active: #fafafa !important;
+    --tv-color-timescale-background: #fafafa !important;
+
+    /* Grid lines - tuna-200 (#d7d9e0) at 10% opacity */
+    --tv-color-pane-grid: rgba(215, 217, 224, 0.1) !important;
+    --tv-color-pane-grid-vert: rgba(215, 217, 224, 0.1) !important;
+    --tv-color-pane-grid-horz: rgba(215, 217, 224, 0.1) !important;
+
+    /* Toolbar buttons */
+    --tv-color-toolbar-button-text: #25262c !important;
+    --tv-color-toolbar-button-text-hover: #ff6b3d !important;
+    --tv-color-toolbar-button-background-hover: #ecedf2 !important;
+    --tv-color-toolbar-button-background-active: #ecedf2 !important;
+    --tv-color-toolbar-button-background-active-hover: #ecedf2 !important;
+    --tv-color-toolbar-button-text-active: #ff6b3d !important;
+    --tv-color-toolbar-button-text-active-hover: #ff6b3d !important;
+
+    /* Popup/Dropdown menus */
+    --tv-color-popup-background: #fafafa !important;
+    --tv-color-popup-element-text: #6e7489 !important;
+    --tv-color-popup-element-text-hover: #ff6b3d !important;
+    --tv-color-popup-element-background-hover: #ecedf2 !important;
+    --tv-color-popup-element-divider-background: rgba(237, 237, 241, 0.1) !important;
+    --tv-color-popup-element-secondary-text: #6e7489 !important;
+    --tv-color-popup-element-hint-text: #6e7489 !important;
+    --tv-color-popup-element-text-active: #ff6b3d !important;
+    --tv-color-popup-element-background-active: #ecedf2 !important;
+
+    /* Toolbox */
+    --tv-color-popup-element-toolbox-text: #6e7489 !important;
+    --tv-color-popup-element-toolbox-text-hover: #ff6b3d !important;
+    --tv-color-popup-element-toolbox-background-hover: #ecedf2 !important;
+    --tv-color-popup-element-toolbox-text-active-hover: #ff6b3d !important;
+    --tv-color-popup-element-toolbox-background-active-hover: #ecedf2 !important;
+  }
+
+  /* ============================================
+     DARK THEME
+     ============================================ */
+  .theme-dark {
+    /* Main backgrounds */
+    --tv-color-platform-background: #0e0e14 !important;
+    --tv-color-pane-background: #0e0e14 !important;
+    --tv-color-toolbar-background: #0e0e14 !important;
+    --tv-color-toolbar-toggle-button-background-active: #0e0e14 !important;
+    --tv-color-timescale-background: #0e0e14 !important;
+
+    /* Toolbar buttons */
+    --tv-color-toolbar-button-text: #f7f8f8 !important;
+    --tv-color-toolbar-button-text-hover: #ff6b3d !important;
+    --tv-color-toolbar-button-background-hover: #1f2131 !important;
+    --tv-color-toolbar-button-background-active: #1f2131 !important;
+    --tv-color-toolbar-button-background-active-hover: #1f2131 !important;
+    --tv-color-toolbar-button-text-active: #ff6b3d !important;
+    --tv-color-toolbar-button-text-active-hover: #ff6b3d !important;
+
+    /* Popup/Dropdown menus */
+    --tv-color-popup-background: #0e0e14 !important;
+    --tv-color-popup-element-text: #b5b8c4 !important;
+    --tv-color-popup-element-text-hover: #ff6b3d !important;
+    --tv-color-popup-element-background-hover: #1f2131 !important;
+    --tv-color-popup-element-divider-background: rgba(181, 184, 196, 0.1) !important;
+    --tv-color-popup-element-secondary-text: #b5b8c4 !important;
+    --tv-color-popup-element-hint-text: #b5b8c4 !important;
+    --tv-color-popup-element-text-active: #ff6b3d !important;
+    --tv-color-popup-element-background-active: #1f2131 !important;
+
+    /* Toolbox */
+    --tv-color-popup-element-toolbox-text: #b5b8c4 !important;
+    --tv-color-popup-element-toolbox-text-hover: #ff6b3d !important;
+    --tv-color-popup-element-toolbox-background-hover: #1f2131 !important;
+    --tv-color-popup-element-toolbox-text-active-hover: #ff6b3d !important;
+    --tv-color-popup-element-toolbox-background-active-hover: #1f2131 !important;
+  }
+
+  /* ============================================
+     COMPREHENSIVE TOOLBAR & PANEL TARGETING
+     ============================================ */
+
+  /* All toolbars */
+  [class*="drawingToolbar"],
+  [class*="toolbar-"],
+  [class*="leftToolbar"],
+  [class*="left-toolbar"],
+  [class*="rightToolbar"],
+  [class*="right-toolbar"],
+  [id="drawing-toolbar"],
+  .js-rootresizer__contents,
+  .layout-with-border-radius,
+  [role="toolbar"],
+  [class*="chart-controls-bar"],
+  div[class*="toolbar"][class*="vertical"],
+  div[data-role="toast-container"],
+  [class*="group-"],
+  [class*="panel"],
+  [class*="drawer"] {
+    background-color: var(--tv-color-platform-background) !important;
+    background: var(--tv-color-platform-background) !important;
+  }
+
+  /* ✅ ENHANCED: Target problematic group classes more aggressively */
+  [class*="group-"][class*="b"],
+  [class*="group-"][class*="a"],
+  [class*="group-"][class*="c"],
+  div[class^="group-"],
+  div[class*="group-"] {
+    background-color: var(--tv-color-platform-background) !important;
+    background: var(--tv-color-platform-background) !important;
+    background-image: none !important;
+  }
+
+  /* ✅ CRITICAL: Override inline styles */
+  [class*="group-"][style*="background"],
+  [class*="group-"][style*="background-color"] {
+    background-color: var(--tv-color-platform-background) !important;
+    background: var(--tv-color-platform-background) !important;
+  }
+
+  /* Target the Lines dropdown specifically */
+  [class*="group-"][class*="dropdown"],
+  [class*="group-"][role="menu"],
+  [class*="group-"][class*="popup"] {
+    background-color: var(--tv-color-popup-background) !important;
+    background: var(--tv-color-popup-background) !important;
+  }
+
+  /* Menu items in the dropdown */
+  [class*="group-"] [class*="item"],
+  [class*="group-"] button,
+  [class*="group-"] [role="menuitem"] {
+    color: var(--tv-color-popup-element-text) !important;
+  }
+
+  [class*="group-"] [class*="item"]:hover,
+  [class*="group-"] button:hover,
+  [class*="group-"] [role="menuitem"]:hover {
+    color: var(--tv-color-popup-element-text-hover) !important;
+    background-color: var(--tv-color-popup-element-background-hover) !important;
+  }
+
+  /* ============================================
+     DROPDOWN MENU STYLING - ENHANCED
+     ============================================ */
+
+  /* Target the menu wrapper specifically */
+  [class*="menuWrap-"],
+  div[class^="menuWrap-"],
+  div[data-name="popup-menu-container"] {
+    background-color: var(--tv-color-popup-background) !important;
+    background: var(--tv-color-popup-background) !important;
+  }
+
+  /* Target the scroll wrapper */
+  [class*="scrollWrap-"] {
+    background-color: var(--tv-color-popup-background) !important;
+  }
+
+  /* Target the menu box */
+  [class*="menuBox-"],
+  div[data-name="menu-inner"],
+  div[data-qa-id="menu-inner"] {
+    background-color: var(--tv-color-popup-background) !important;
+    background: var(--tv-color-popup-background) !important;
+  }
+
+  /* Target menu items */
+  [class*="item-"][data-name="dropdown-item"],
+  div[data-name="dropdown-item"] {
+    color: var(--tv-color-popup-element-text) !important;
+    background-color: transparent !important;
+  }
+
+  /* Menu items hover */
+  [class*="item-"][data-name="dropdown-item"]:hover,
+  div[data-name="dropdown-item"]:hover {
+    color: var(--tv-color-popup-element-text-hover) !important;
+    background-color: var(--tv-color-popup-element-background-hover) !important;
+  }
+
+  /* Target the label text inside items */
+  [class*="labelRow-"],
+  [class*="label-"] {
+    color: inherit !important;
+  }
+
+  /* Keep the group wrapper targeted */
+  div[class*="group-"] {
+    background-color: var(--tv-color-platform-background) !important;
+    background: var(--tv-color-platform-background) !important;
+  }
+
+  /* Left sidebar/panel */
+  [class*="chart-page"] [class*="left"],
+  [class*="chart-container"] > div:first-child,
+  div[class*="left"][class*="panel"],
+  div[class*="sidebar-left"],
+  div[class*="left"][class*="toolbar"],
+  div[class*="group-"][class*="col-"] {
+    background-color: var(--tv-color-platform-background) !important;
+    background: var(--tv-color-platform-background) !important;
+  }
+
+  /* Time scale, price scale, and bottom toolbar */
+  [class*="timescale"],
+  [class*="time-axis"],
+  [class*="bottom-toolbar"],
+  [class*="price-axis"],
+  [class*="pricescale"] {
+    background-color: var(--tv-color-platform-background) !important;
+    background: var(--tv-color-platform-background) !important;
+  }
+
+  /* Chart markup and legend */
+  [class*="chart-markup-table"],
+  [class*="legend-"],
+  [class*="source-"] {
+    background-color: var(--tv-color-platform-background) !important;
+  }
+
+  /* Vertical toolbars and panels */
+  div[class*="vertical"][class*="toolbar"],
+  div[class*="vertical"][class*="panel"] {
+    background-color: var(--tv-color-platform-background) !important;
+    background: var(--tv-color-platform-background) !important;
+  }
+
+  /* ============================================
+     CROSSHAIR BUTTON
+     ============================================ */
+  button[aria-label="Cross"],
+  button[aria-label="Cross"] *,
+  button[data-tooltip="Cross"],
+  button[data-tooltip="Cross"] * {
+    color: #ff4e17 !important;
+  }
+
+  button[aria-label="Cross"] svg,
+  button[aria-label="Cross"] svg *,
+  button[data-tooltip="Cross"] svg,
+  button[data-tooltip="Cross"] svg * {
+    fill: #ff4e17 !important;
+    stroke: #ff4e17 !important;
+  }
+
+  /* ============================================
+     UI CLEANUP
+     ============================================ */
+  .tradingview-widget-container,
+  .tradingview-widget-container iframe,
+  .tv-embed-widget-wrapper,
+  .tv-embed-widget-wrapper__body {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .container-kfvcmk8t {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* ============================================
+     FULLSCREEN MODE
+     ============================================ */
+  [data-chart-container]:fullscreen,
+  [data-chart-container]:-webkit-full-screen,
+  [data-chart-container]:-moz-full-screen,
+  .tradingview-widget-container:fullscreen,
+  .tradingview-widget-container:-webkit-full-screen,
+  .tradingview-widget-container:-moz-full-screen {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 9999 !important;
+  }
+
+  [data-chart-container]:fullscreen *,
+  [data-chart-container]:-webkit-full-screen *,
+  [data-chart-container]:-moz-full-screen *,
+  :fullscreen .tradingview-widget-container > div,
+  :-webkit-full-screen .tradingview-widget-container > div,
+  :-moz-full-screen .tradingview-widget-container > div {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+  }
+
+  :fullscreen iframe,
+  :-webkit-full-screen iframe,
+  :-moz-full-screen iframe {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  [data-chart-container]:fullscreen,
+  [data-chart-container]:-webkit-full-screen,
+  [data-chart-container]:-moz-full-screen {
+    overflow: visible !important;
+  }
+
+  .scrollbar-auto-hide:has([data-chart-container]:fullscreen),
+  .scrollbar-auto-hide:has([data-chart-container]:-webkit-full-screen),
+  .scrollbar-auto-hide:has([data-chart-container]:-moz-full-screen) {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  div:has([data-chart-container]:fullscreen),
+  div:has([data-chart-container]:-webkit-full-screen),
+  div:has([data-chart-container]:-moz-full-screen) {
+    position: static !important;
+    height: auto !important;
+    max-height: none !important;
+  }

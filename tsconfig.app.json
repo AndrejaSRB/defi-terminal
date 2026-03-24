@@ -25,8 +25,9 @@
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@charting_library/*": ["./public/charting_library/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "public/charting_library/*.d.ts"]
 }
