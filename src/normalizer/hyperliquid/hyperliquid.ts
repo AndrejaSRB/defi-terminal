@@ -184,6 +184,7 @@ export const hyperliquidNormalizer: DexNormalizer = {
 		const groups = (await res.json()) as HlAllPerpMetasResponse;
 
 		const assetMetaMap = new Map<string, AssetMeta>();
+		szDecimalsMap.clear();
 		universeOrder.length = 0;
 
 		for (const group of groups) {
@@ -360,6 +361,16 @@ export const hyperliquidNormalizer: DexNormalizer = {
 	calculatePriceDecimals: (value: number, coin: string) => {
 		const szDecimals = szDecimalsMap.get(coin) ?? 2;
 		return calculatePriceDecimals(value, szDecimals);
+	},
+
+	// Estimations
+	estimateLiquidationPrice: ({ side, entryPrice, leverage }) => {
+		// HL simplified formula: uses maintenance margin rate ~0.5% (tier 0)
+		const mmRate = 0.005;
+		if (side === 'long') {
+			return entryPrice * (1 - 1 / leverage + mmRate);
+		}
+		return entryPrice * (1 + 1 / leverage - mmRate);
 	},
 
 	// Parsers

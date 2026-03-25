@@ -21,3 +21,6 @@ export const tpToggleAtom = atom<'usd' | 'pct'>('pct');
 export const slPriceAtom = atom<string>('');
 export const slLossAtom = atom<string>('');
 export const slToggleAtom = atom<'usd' | 'pct'>('pct');
+
+// ── Slippage ────────────────────────────────────────────────────────
+export const slippageAtom = atom<number>(3);

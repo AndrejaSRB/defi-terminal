@@ -3,6 +3,7 @@ import { safeParseFloat } from '@/lib/numbers';
 import { activeTokenAtom } from '@/atoms/active-token';
 import { activeAssetDataAtom } from '@/atoms/active-asset';
 import { assetMetaAtom } from '@/atoms/asset-meta';
+import { activeNormalizerAtom } from '@/atoms/dex';
 import { userPositionsAtom } from '@/atoms/user/positions';
 import { userTradingContextAtom } from '@/atoms/user/trading-context';
 import {
@@ -90,6 +91,24 @@ export const maxSizeInCoinAtom = atom((get) => {
 	const price = get(effectivePriceAtom);
 	if (price <= 0) return 0;
 	return available / price;
+});
+
+export const estLiquidationPriceAtom = atom((get) => {
+	const normalizer = get(activeNormalizerAtom);
+	if (!normalizer.estimateLiquidationPrice) return 0;
+
+	const side = get(orderSideAtom);
+	const price = get(effectivePriceAtom);
+	const leverage = get(leverageAtom);
+	const sizeInCoin = get(sizeInCoinAtom);
+	if (price <= 0 || leverage <= 0 || sizeInCoin <= 0) return 0;
+
+	return normalizer.estimateLiquidationPrice({
+		side,
+		entryPrice: price,
+		leverage,
+		sizeInCoin,
+	});
 });
 
 export const sliderPercentDerivedAtom = atom((get) => {

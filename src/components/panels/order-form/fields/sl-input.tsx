@@ -14,6 +14,7 @@ interface SlInputProps {
 	onLossChange: (value: string) => void;
 	toggle: 'usd' | 'pct';
 	onToggleChange: (value: 'usd' | 'pct') => void;
+	maxDecimals?: number;
 }
 
 export const SlInput = memo(function SlInput({
@@ -23,6 +24,7 @@ export const SlInput = memo(function SlInput({
 	onLossChange,
 	toggle,
 	onToggleChange,
+	maxDecimals,
 }: SlInputProps) {
 	return (
 		<div className="space-y-1">
@@ -41,12 +43,14 @@ export const SlInput = memo(function SlInput({
 					value={price}
 					onValueChange={onPriceChange}
 					placeholder="SL Price"
+					maxDecimals={maxDecimals}
 				/>
 				<NumberInput
 					value={loss}
 					onValueChange={onLossChange}
 					placeholder="Loss"
 					suffix={toggle === 'pct' ? '%' : '$'}
+					maxDecimals={2}
 				/>
 			</div>
 		</div>

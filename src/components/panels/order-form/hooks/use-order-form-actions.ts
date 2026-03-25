@@ -27,6 +27,7 @@ import {
 	activeMetaAtom,
 	markPriceAtom,
 	effectivePriceAtom,
+	orderValueAtom,
 	maxSizeInCoinAtom,
 	serverLeverageAtom,
 	serverMarginModeAtom,
@@ -69,11 +70,11 @@ export function useOrderFormActions(): OrderFormActions {
 	const setMarginMode = useSetAtom(marginModeAtom);
 	const setLeverage = useSetAtom(leverageAtom);
 	const setTpslEnabled = useSetAtom(tpslEnabledAtom);
-	const setTpPrice = useSetAtom(tpPriceAtom);
-	const setTpGain = useSetAtom(tpGainAtom);
+	const setTpPriceRaw = useSetAtom(tpPriceAtom);
+	const setTpGainRaw = useSetAtom(tpGainAtom);
 	const setTpToggle = useSetAtom(tpToggleAtom);
-	const setSlPrice = useSetAtom(slPriceAtom);
-	const setSlLoss = useSetAtom(slLossAtom);
+	const setSlPriceRaw = useSetAtom(slPriceAtom);
+	const setSlLossRaw = useSetAtom(slLossAtom);
 	const setSlToggle = useSetAtom(slToggleAtom);
 
 	const resetForm = useCallback(() => {
@@ -82,20 +83,20 @@ export function useOrderFormActions(): OrderFormActions {
 		setSliderPercentAtom(0);
 		setReduceOnly(false);
 		setTpslEnabled(false);
-		setTpPrice('');
-		setTpGain('');
-		setSlPrice('');
-		setSlLoss('');
+		setTpPriceRaw('');
+		setTpGainRaw('');
+		setSlPriceRaw('');
+		setSlLossRaw('');
 	}, [
 		setSize,
 		setLimitPrice,
 		setSliderPercentAtom,
 		setReduceOnly,
 		setTpslEnabled,
-		setTpPrice,
-		setTpGain,
-		setSlPrice,
-		setSlLoss,
+		setTpPriceRaw,
+		setTpGainRaw,
+		setSlPriceRaw,
+		setSlLossRaw,
 	]);
 
 	// Reset form on token switch
@@ -151,6 +152,103 @@ export function useOrderFormActions(): OrderFormActions {
 		[setSliderPercentAtom, setSize, store],
 	);
 
+	// ── TP/SL compound setters ──────────────────────────────────────
+	const computeGain = useCallback(
+		(tpPrice: number, entryPrice: number): string => {
+			if (entryPrice <= 0 || tpPrice <= 0) return '';
+			const side = store.get(orderSideAtom);
+			const toggle = store.get(tpToggleAtom);
+			if (toggle === 'pct') {
+				const pct =
+					side === 'long'
+						? ((tpPrice - entryPrice) / entryPrice) * 100
+						: ((entryPrice - tpPrice) / entryPrice) * 100;
+				return pct.toFixed(2);
+			}
+			const usd = side === 'long' ? tpPrice - entryPrice : entryPrice - tpPrice;
+			return usd.toFixed(2);
+		},
+		[store],
+	);
+
+	const computeLoss = useCallback(
+		(slPrice: number, entryPrice: number): string => {
+			if (entryPrice <= 0 || slPrice <= 0) return '';
+			const side = store.get(orderSideAtom);
+			const toggle = store.get(slToggleAtom);
+			if (toggle === 'pct') {
+				const pct =
+					side === 'long'
+						? ((entryPrice - slPrice) / entryPrice) * 100
+						: ((slPrice - entryPrice) / entryPrice) * 100;
+				return pct.toFixed(2);
+			}
+			const usd = side === 'long' ? entryPrice - slPrice : slPrice - entryPrice;
+			return usd.toFixed(2);
+		},
+		[store],
+	);
+
+	const setTpPrice = useCallback(
+		(value: string) => {
+			setTpPriceRaw(value);
+			const entry = store.get(effectivePriceAtom);
+			const tp = safeParseFloat(value);
+			setTpGainRaw(computeGain(tp, entry));
+		},
+		[setTpPriceRaw, setTpGainRaw, computeGain, store],
+	);
+
+	const setTpGain = useCallback(
+		(value: string) => {
+			setTpGainRaw(value);
+			const entry = store.get(effectivePriceAtom);
+			const gain = safeParseFloat(value);
+			if (entry <= 0 || gain === 0) return;
+			const side = store.get(orderSideAtom);
+			const toggle = store.get(tpToggleAtom);
+			let tp: number;
+			if (toggle === 'pct') {
+				tp =
+					side === 'long' ? entry * (1 + gain / 100) : entry * (1 - gain / 100);
+			} else {
+				tp = side === 'long' ? entry + gain : entry - gain;
+			}
+			if (tp > 0) setTpPriceRaw(tp.toFixed(2));
+		},
+		[setTpGainRaw, setTpPriceRaw, store],
+	);
+
+	const setSlPrice = useCallback(
+		(value: string) => {
+			setSlPriceRaw(value);
+			const entry = store.get(effectivePriceAtom);
+			const sl = safeParseFloat(value);
+			setSlLossRaw(computeLoss(sl, entry));
+		},
+		[setSlPriceRaw, setSlLossRaw, computeLoss, store],
+	);
+
+	const setSlLoss = useCallback(
+		(value: string) => {
+			setSlLossRaw(value);
+			const entry = store.get(effectivePriceAtom);
+			const loss = safeParseFloat(value);
+			if (entry <= 0 || loss === 0) return;
+			const side = store.get(orderSideAtom);
+			const toggle = store.get(slToggleAtom);
+			let sl: number;
+			if (toggle === 'pct') {
+				sl =
+					side === 'long' ? entry * (1 - loss / 100) : entry * (1 + loss / 100);
+			} else {
+				sl = side === 'long' ? entry - loss : entry + loss;
+			}
+			if (sl > 0) setSlPriceRaw(sl.toFixed(2));
+		},
+		[setSlLossRaw, setSlPriceRaw, store],
+	);
+
 	const toggleTpsl = useCallback(() => {
 		setTpslEnabled((prev) => !prev);
 	}, [setTpslEnabled]);
@@ -187,6 +285,7 @@ export function useOrderFormActions(): OrderFormActions {
 			currentPositionSide: position ? position.side : null,
 			szDecimals: meta?.szDecimals ?? 2,
 			maxLeverage: meta?.maxLeverage ?? 50,
+			orderValue: store.get(orderValueAtom),
 			tpslEnabled,
 			tpPrice: safeParseFloat(store.get(tpPriceAtom)),
 			slPrice: safeParseFloat(store.get(slPriceAtom)),

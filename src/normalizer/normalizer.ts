@@ -113,6 +113,14 @@ export interface DexNormalizer {
 	parseHistoricalOrders?: (raw: unknown) => HistoricalOrder[];
 	parseUserTradingContext?: (raw: unknown) => UserTradingContext;
 
+	// Estimations — DEX-specific formulas
+	estimateLiquidationPrice?: (params: {
+		side: 'long' | 'short';
+		entryPrice: number;
+		leverage: number;
+		sizeInCoin: number;
+	}) => number;
+
 	// REST snapshot fetchers
 	fetchOrderBook: (coin: string, agg?: AggregationLevel) => Promise<OrderBook>;
 	fetchTrades: (coin: string, limit?: number) => Promise<Trade[]>;

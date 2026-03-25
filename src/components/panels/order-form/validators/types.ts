@@ -21,6 +21,7 @@ export interface OrderFormValues {
 	currentPositionSide: 'LONG' | 'SHORT' | null;
 	szDecimals: number;
 	maxLeverage: number;
+	orderValue: number;
 	tpslEnabled: boolean;
 	tpPrice: number;
 	slPrice: number;

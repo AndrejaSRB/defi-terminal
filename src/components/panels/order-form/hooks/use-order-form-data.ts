@@ -20,13 +20,16 @@ import {
 	slPriceAtom,
 	slLossAtom,
 	slToggleAtom,
+	slippageAtom,
 } from '../atoms/order-form-atoms';
 import {
 	availableToTradeAtom,
 	activePositionAtom,
+	activeMetaAtom,
 	markPriceAtom,
 	orderValueAtom,
 	marginRequiredAtom,
+	estLiquidationPriceAtom,
 	sliderPercentDerivedAtom,
 } from '../atoms/order-form-derived';
 
@@ -52,6 +55,8 @@ export interface OrderFormData {
 	slPrice: string;
 	slLoss: string;
 	slToggle: 'usd' | 'pct';
+
+	szDecimals: number;
 
 	submitState:
 		| 'connect'
@@ -93,9 +98,12 @@ export function useOrderFormData(): OrderFormData {
 	const markPriceRaw = useAtomValue(markPriceAtom);
 	const availableMarginRaw = useAtomValue(availableToTradeAtom);
 	const position = useAtomValue(activePositionAtom);
+	const meta = useAtomValue(activeMetaAtom);
 	const orderValueRaw = useDeferredValue(useAtomValue(orderValueAtom));
 	const marginRequiredRaw = useDeferredValue(useAtomValue(marginRequiredAtom));
 	const sliderPercent = useAtomValue(sliderPercentDerivedAtom);
+	const estLiqPrice = useDeferredValue(useAtomValue(estLiquidationPriceAtom));
+	const slippage = useAtomValue(slippageAtom);
 
 	return useMemo(() => {
 		const sizeNum = safeParseFloat(size);
@@ -141,9 +149,11 @@ export function useOrderFormData(): OrderFormData {
 			slPrice,
 			slLoss,
 			slToggle,
+			szDecimals: meta?.szDecimals ?? 2,
 			submitState,
 			info: {
-				liquidationPrice: 'N/A',
+				liquidationPrice:
+					estLiqPrice > 0 ? normalizer.formatPrice(estLiqPrice, token) : 'N/A',
 				orderValue:
 					orderValueRaw > 0
 						? `$${orderValueRaw.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
@@ -152,8 +162,8 @@ export function useOrderFormData(): OrderFormData {
 					marginRequiredRaw > 0
 						? `$${marginRequiredRaw.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
 						: 'N/A',
-				slippage: 'N/A',
-				fees: 'N/A',
+				slippage: `${slippage.toFixed(1)}%`,
+				fees: '0%',
 			},
 		};
 	}, [
@@ -172,6 +182,8 @@ export function useOrderFormData(): OrderFormData {
 		markPriceRaw,
 		availableMarginRaw,
 		position,
+		meta,
+		estLiqPrice,
 		orderValueRaw,
 		marginRequiredRaw,
 		tpslEnabled,
@@ -181,5 +193,6 @@ export function useOrderFormData(): OrderFormData {
 		slPrice,
 		slLoss,
 		slToggle,
+		slippage,
 	]);
 }

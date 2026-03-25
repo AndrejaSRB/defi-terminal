@@ -8,6 +8,7 @@ interface SizeInputProps {
 	denom: 'coin' | 'usd';
 	onDenomChange: (denom: 'coin' | 'usd') => void;
 	token: string;
+	szDecimals: number;
 }
 
 export const SizeInput = memo(function SizeInput({
@@ -16,6 +17,7 @@ export const SizeInput = memo(function SizeInput({
 	denom,
 	onDenomChange,
 	token,
+	szDecimals,
 }: SizeInputProps) {
 	const denomOptions = useMemo(
 		() => [
@@ -42,6 +44,7 @@ export const SizeInput = memo(function SizeInput({
 				onValueChange={onChange}
 				suffix={denom === 'coin' ? token : 'USD'}
 				placeholder="0.00"
+				maxDecimals={denom === 'coin' ? szDecimals : 2}
 			/>
 		</div>
 	);

@@ -14,6 +14,7 @@ interface TpInputProps {
 	onGainChange: (value: string) => void;
 	toggle: 'usd' | 'pct';
 	onToggleChange: (value: 'usd' | 'pct') => void;
+	maxDecimals?: number;
 }
 
 export const TpInput = memo(function TpInput({
@@ -23,6 +24,7 @@ export const TpInput = memo(function TpInput({
 	onGainChange,
 	toggle,
 	onToggleChange,
+	maxDecimals,
 }: TpInputProps) {
 	return (
 		<div className="space-y-1">
@@ -41,12 +43,14 @@ export const TpInput = memo(function TpInput({
 					value={price}
 					onValueChange={onPriceChange}
 					placeholder="TP Price"
+					maxDecimals={maxDecimals}
 				/>
 				<NumberInput
 					value={gain}
 					onValueChange={onGainChange}
 					placeholder="Gain"
 					suffix={toggle === 'pct' ? '%' : '$'}
+					maxDecimals={2}
 				/>
 			</div>
 		</div>

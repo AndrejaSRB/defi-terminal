@@ -46,6 +46,7 @@ export function OrderFormContent() {
 					value={data.limitPrice}
 					onChange={actions.setLimitPrice}
 					label="Limit Price"
+					maxDecimals={2}
 				/>
 			)}
 
@@ -56,6 +57,7 @@ export function OrderFormContent() {
 				denom={data.sizeDenom}
 				onDenomChange={actions.setSizeDenom}
 				token={data.token}
+				szDecimals={data.szDecimals}
 			/>
 
 			{/* Size Slider */}
@@ -79,6 +81,7 @@ export function OrderFormContent() {
 					onGainChange={actions.setTpGain}
 					toggle={data.tpToggle}
 					onToggleChange={actions.setTpToggle}
+					maxDecimals={2}
 				/>
 				<SlInput
 					price={data.slPrice}
@@ -87,6 +90,7 @@ export function OrderFormContent() {
 					onLossChange={actions.setSlLoss}
 					toggle={data.slToggle}
 					onToggleChange={actions.setSlToggle}
+					maxDecimals={2}
 				/>
 			</TpslSection>
 

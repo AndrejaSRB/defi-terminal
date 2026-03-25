@@ -10,6 +10,7 @@ interface NumberInputProps
 	onValueChange: (value: string) => void;
 	prefix?: React.ReactNode;
 	suffix?: React.ReactNode;
+	maxDecimals?: number;
 }
 
 const NUMERIC_REGEX = /^-?\d*\.?\d*$/;
@@ -20,16 +21,21 @@ function NumberInput({
 	onValueChange,
 	prefix,
 	suffix,
+	maxDecimals,
 	...props
 }: NumberInputProps) {
 	const handleChange = React.useCallback(
 		(e: React.ChangeEvent<HTMLInputElement>) => {
 			const raw = e.target.value;
 			if (raw === '' || NUMERIC_REGEX.test(raw)) {
+				if (maxDecimals != null && raw.includes('.')) {
+					const decimals = raw.split('.')[1];
+					if (decimals && decimals.length > maxDecimals) return;
+				}
 				onValueChange(raw);
 			}
 		},
-		[onValueChange],
+		[onValueChange, maxDecimals],
 	);
 
 	return (

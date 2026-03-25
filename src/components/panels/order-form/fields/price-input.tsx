@@ -5,12 +5,14 @@ interface PriceInputProps {
 	value: string;
 	onChange: (value: string) => void;
 	label: string;
+	maxDecimals?: number;
 }
 
 export const PriceInput = memo(function PriceInput({
 	value,
 	onChange,
 	label,
+	maxDecimals,
 }: PriceInputProps) {
 	return (
 		<div className="space-y-1">
@@ -20,6 +22,7 @@ export const PriceInput = memo(function PriceInput({
 				onValueChange={onChange}
 				prefix="$"
 				placeholder="0.00"
+				maxDecimals={maxDecimals}
 			/>
 		</div>
 	);

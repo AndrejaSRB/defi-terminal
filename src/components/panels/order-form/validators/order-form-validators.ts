@@ -4,6 +4,19 @@ import type {
 	OrderFormValues,
 } from './types';
 
+const MIN_ORDER_VALUE = 10;
+
+export function validateNaN(
+	value: number,
+	field: string,
+	label: string,
+): ValidationError | null {
+	if (Number.isNaN(value) || !Number.isFinite(value)) {
+		return { field, message: `${label} is not a valid number` };
+	}
+	return null;
+}
+
 export function validateSize(
 	size: number,
 	szDecimals: number,
@@ -17,6 +30,34 @@ export function validateSize(
 		return {
 			field: 'size',
 			message: `Size precision exceeds ${szDecimals} decimals`,
+		};
+	}
+	return null;
+}
+
+export function validateMinOrderValue(
+	orderValue: number,
+): ValidationError | null {
+	if (orderValue > 0 && orderValue < MIN_ORDER_VALUE) {
+		return {
+			field: 'orderValue',
+			message: `Minimum order value is $${MIN_ORDER_VALUE}`,
+		};
+	}
+	return null;
+}
+
+export function validateLeverage(
+	leverage: number,
+	maxLeverage: number,
+): ValidationError | null {
+	if (leverage <= 0 || !Number.isFinite(leverage)) {
+		return { field: 'leverage', message: 'Leverage must be at least 1x' };
+	}
+	if (leverage > maxLeverage) {
+		return {
+			field: 'leverage',
+			message: `Leverage cannot exceed ${maxLeverage}x`,
 		};
 	}
 	return null;
@@ -88,7 +129,7 @@ export function validateReduceOnly(
 	if (size > positionSize) {
 		return {
 			field: 'reduceOnly',
-			message: `Reduce-only size (${size}) exceeds position size (${positionSize})`,
+			message: `Reduce-only size exceeds position size (${positionSize})`,
 		};
 	}
 	return null;
@@ -96,25 +137,27 @@ export function validateReduceOnly(
 
 export function validateTpPrice(
 	tpPrice: number,
-	entryPrice: number,
+	currentPrice: number,
 	side: 'long' | 'short',
 ): ValidationError | null {
+	const nanError = validateNaN(tpPrice, 'tpPrice', 'Take Profit price');
+	if (nanError) return nanError;
 	if (tpPrice <= 0) {
 		return {
 			field: 'tpPrice',
-			message: 'Take profit price must be greater than 0',
+			message: 'Take Profit price must be greater than 0',
 		};
 	}
-	if (side === 'long' && tpPrice <= entryPrice) {
+	if (side === 'long' && tpPrice <= currentPrice) {
 		return {
 			field: 'tpPrice',
-			message: 'Take profit must be above entry price for long positions',
+			message: 'Take Profit must be higher than current price',
 		};
 	}
-	if (side === 'short' && tpPrice >= entryPrice) {
+	if (side === 'short' && tpPrice >= currentPrice) {
 		return {
 			field: 'tpPrice',
-			message: 'Take profit must be below entry price for short positions',
+			message: 'Take Profit must be lower than current price',
 		};
 	}
 	return null;
@@ -122,25 +165,27 @@ export function validateTpPrice(
 
 export function validateSlPrice(
 	slPrice: number,
-	entryPrice: number,
+	currentPrice: number,
 	side: 'long' | 'short',
 ): ValidationError | null {
+	const nanError = validateNaN(slPrice, 'slPrice', 'Stop Loss price');
+	if (nanError) return nanError;
 	if (slPrice <= 0) {
 		return {
 			field: 'slPrice',
-			message: 'Stop loss price must be greater than 0',
+			message: 'Stop Loss price must be greater than 0',
 		};
 	}
-	if (side === 'long' && slPrice >= entryPrice) {
+	if (side === 'long' && slPrice >= currentPrice) {
 		return {
 			field: 'slPrice',
-			message: 'Stop loss must be below entry price for long positions',
+			message: 'Stop Loss must be lower than current price',
 		};
 	}
-	if (side === 'short' && slPrice <= entryPrice) {
+	if (side === 'short' && slPrice <= currentPrice) {
 		return {
 			field: 'slPrice',
-			message: 'Stop loss must be above entry price for short positions',
+			message: 'Stop Loss must be higher than current price',
 		};
 	}
 	return null;
@@ -149,28 +194,55 @@ export function validateSlPrice(
 export function validateOrderForm(values: OrderFormValues): ValidationResult {
 	const errors: ValidationError[] = [];
 
+	// NaN checks
+	const sizeNaN = validateNaN(values.size, 'size', 'Size');
+	if (sizeNaN) {
+		errors.push(sizeNaN);
+		return { valid: false, errors };
+	}
+
+	// Size
 	const sizeError = validateSize(values.size, values.szDecimals);
 	if (sizeError) errors.push(sizeError);
 
+	// Min order value
+	const minValueError = validateMinOrderValue(values.orderValue);
+	if (minValueError) errors.push(minValueError);
+
+	// Leverage
+	const leverageError = validateLeverage(values.leverage, values.maxLeverage);
+	if (leverageError) errors.push(leverageError);
+
+	// Limit price
 	if (values.type === 'limit') {
-		const priceError = validateLimitPrice(
+		const nanError = validateNaN(
 			values.limitPrice,
-			values.markPrice,
-			values.side,
+			'limitPrice',
+			'Limit price',
 		);
-		if (priceError) errors.push(priceError);
+		if (nanError) {
+			errors.push(nanError);
+		} else {
+			const priceError = validateLimitPrice(
+				values.limitPrice,
+				values.markPrice,
+				values.side,
+			);
+			if (priceError) errors.push(priceError);
+		}
 	}
 
+	// Margin (skip for reduce-only)
 	if (!values.reduceOnly) {
 		const marginError = validateMargin(
-			values.size *
-				(values.type === 'market' ? values.markPrice : values.limitPrice),
+			values.orderValue,
 			values.leverage,
 			values.availableMargin,
 		);
 		if (marginError) errors.push(marginError);
 	}
 
+	// Reduce only
 	if (values.reduceOnly) {
 		const reduceError = validateReduceOnly(
 			values.size,
@@ -181,26 +253,53 @@ export function validateOrderForm(values: OrderFormValues): ValidationResult {
 		if (reduceError) errors.push(reduceError);
 	}
 
+	// TP/SL
 	if (values.tpslEnabled) {
-		const effectiveEntry =
+		const hasTp = values.tpPrice > 0;
+		const hasSl = values.slPrice > 0;
+
+		if (!hasTp && !hasSl) {
+			errors.push({
+				field: 'tpsl',
+				message: 'Set at least one: Take Profit or Stop Loss',
+			});
+		}
+
+		const effectivePrice =
 			values.type === 'market' ? values.markPrice : values.limitPrice;
 
-		if (values.tpPrice > 0) {
+		if (hasTp) {
 			const tpError = validateTpPrice(
 				values.tpPrice,
-				effectiveEntry,
+				effectivePrice,
 				values.side,
 			);
 			if (tpError) errors.push(tpError);
 		}
 
-		if (values.slPrice > 0) {
+		if (hasSl) {
 			const slError = validateSlPrice(
 				values.slPrice,
-				effectiveEntry,
+				effectivePrice,
 				values.side,
 			);
 			if (slError) errors.push(slError);
+		}
+
+		// TP/SL cross-validation
+		if (hasTp && hasSl) {
+			if (values.side === 'long' && values.tpPrice <= values.slPrice) {
+				errors.push({
+					field: 'tpsl',
+					message: 'Take Profit must be above Stop Loss for long positions',
+				});
+			}
+			if (values.side === 'short' && values.tpPrice >= values.slPrice) {
+				errors.push({
+					field: 'tpsl',
+					message: 'Take Profit must be below Stop Loss for short positions',
+				});
+			}
 		}
 	}
 
