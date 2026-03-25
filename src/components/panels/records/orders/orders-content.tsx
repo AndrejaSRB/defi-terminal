@@ -1,6 +1,7 @@
-import { Button } from '@/components/ui/button';
+import { Wallet, ClipboardList } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { EmptyState } from '../components/empty-state';
 import { useOrdersData } from './hooks/use-orders-data';
 import { OrdersTable } from './orders-table';
 import { OrderCard } from './order-card';
@@ -12,22 +13,22 @@ export function OrdersContent() {
 
 	if (!isAuthenticated) {
 		return (
-			<div className="flex h-full flex-col items-center justify-center gap-3">
-				<span className="text-sm text-muted-foreground">
-					Connect wallet to view orders
-				</span>
-				<Button size="sm" onClick={login}>
-					Connect
-				</Button>
-			</div>
+			<EmptyState
+				icon={<Wallet className="size-5" />}
+				title="Connect Wallet"
+				description="Connect your wallet to view orders"
+				action={{ label: 'Connect', onClick: login }}
+			/>
 		);
 	}
 
 	if (isEmpty) {
 		return (
-			<div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-				No open orders
-			</div>
+			<EmptyState
+				icon={<ClipboardList className="size-5" />}
+				title="No Open Orders"
+				description="Place a limit order to see it here"
+			/>
 		);
 	}
 

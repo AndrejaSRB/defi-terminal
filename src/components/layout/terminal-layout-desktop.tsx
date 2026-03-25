@@ -8,7 +8,7 @@ import { TokenHeader } from './token-header/token-header';
 import { StatusBar } from './status-bar';
 import { ChartPanel } from '@/components/panels/chart/chart-panel';
 import { OrderbookPanel } from '@/components/panels/orderbook/orderbook-panel';
-import { OrderFormPanel } from '@/components/panels/order-form-panel';
+import { OrderFormPanel } from '@/components/panels/order-form/order-form-panel';
 import { RecordsPanel } from '@/components/panels/records/records-panel';
 import { AccountPanel } from '@/components/panels/account-panel';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -77,7 +77,7 @@ export function TerminalLayoutDesktop() {
 					minSize={isXl ? 295 : 260}
 				>
 					<ResizablePanelGroup orientation="vertical">
-						<ResizablePanel id="placeorder-section" minSize={200}>
+						<ResizablePanel id="placeorder-section" minSize={740}>
 							<div className="relative flex h-full flex-col overflow-hidden rounded-sm border border-border bg-card">
 								<OrderFormPanel />
 							</div>

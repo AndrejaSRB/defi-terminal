@@ -3,7 +3,7 @@ import { TokenHeader } from './token-header/token-header';
 import { StatusBar } from './status-bar';
 import { ChartPanel } from '@/components/panels/chart/chart-panel';
 import { OrderbookPanel } from '@/components/panels/orderbook/orderbook-panel';
-import { OrderFormPanel } from '@/components/panels/order-form-panel';
+import { OrderFormPanel } from '@/components/panels/order-form/order-form-panel';
 import { RecordsPanel } from '@/components/panels/records/records-panel';
 import { AccountPanel } from '@/components/panels/account-panel';
 
