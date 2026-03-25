@@ -123,12 +123,3 @@
   0% { color: #f87171; }
   100% { color: inherit; }
 }
-
-@keyframes ob-flash {
-  0% { background-color: rgba(255, 255, 255, 0.08); }
-  100% { background-color: transparent; }
-}
-
-.ob-flash {
-  animation: ob-flash 250ms ease-out;
-}

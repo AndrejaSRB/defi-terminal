@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useEffect } from 'react';
+import { memo, useCallback } from 'react';
 import { useSetAtom } from 'jotai';
 import { cn } from '@/lib/utils';
 import {
@@ -12,23 +12,11 @@ const BID_COLOR = 'rgba(2, 199, 123, 0.15)';
 
 export const OrderBookRow = memo(function OrderBookRow({
 	level,
-	isNew,
 }: {
 	level: FormattedLevel;
-	isNew?: boolean;
 }) {
 	const setOrderType = useSetAtom(orderTypeAtom);
 	const setLimitPrice = useSetAtom(limitPriceAtom);
-	const rowRef = useRef<HTMLDivElement>(null);
-
-	useEffect(() => {
-		if (!isNew) return;
-		const el = rowRef.current;
-		if (!el) return;
-		el.classList.add('ob-flash');
-		const timer = setTimeout(() => el.classList.remove('ob-flash'), 250);
-		return () => clearTimeout(timer);
-	}, [isNew]);
 
 	const handleClick = useCallback(() => {
 		setOrderType('limit');
@@ -39,7 +27,6 @@ export const OrderBookRow = memo(function OrderBookRow({
 
 	return (
 		<div
-			ref={rowRef}
 			data-ob-row
 			onClick={handleClick}
 			className="relative grid min-h-[22px] flex-1 cursor-pointer grid-cols-3 items-center text-xs hover:bg-muted/30"
