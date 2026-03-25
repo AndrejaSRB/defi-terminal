@@ -1,16 +1,11 @@
 import { memo, useCallback, useState } from 'react';
+import { useAtomValue } from 'jotai';
 import { Button } from '@/components/ui/button';
+import { leverageAtom } from '../atoms/order-form-atoms';
 import { LeverageDialog } from './leverage-dialog';
 
-interface LeverageButtonProps {
-	leverage: number;
-	onChange: (leverage: number) => void;
-}
-
-export const LeverageButton = memo(function LeverageButton({
-	leverage,
-	onChange,
-}: LeverageButtonProps) {
+export const LeverageButton = memo(function LeverageButton() {
+	const leverage = useAtomValue(leverageAtom);
 	const [open, setOpen] = useState(false);
 
 	const handleClick = useCallback(() => setOpen(true), []);
@@ -25,12 +20,7 @@ export const LeverageButton = memo(function LeverageButton({
 			>
 				{leverage}x
 			</Button>
-			<LeverageDialog
-				open={open}
-				onOpenChange={setOpen}
-				value={leverage}
-				onChange={onChange}
-			/>
+			<LeverageDialog open={open} onOpenChange={setOpen} />
 		</>
 	);
 });

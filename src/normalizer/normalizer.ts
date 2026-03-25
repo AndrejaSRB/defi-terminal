@@ -13,6 +13,7 @@ import type {
 	UserFill,
 	FundingPayment,
 	MarginSummary,
+	UserTradingContext,
 } from './types';
 
 // ── Channel Descriptor ───────────────────────────────────────────────
@@ -74,6 +75,7 @@ export interface DexNormalizer {
 		spotState?: (address: string) => ChannelDescriptor;
 		userFundings?: (address: string) => ChannelDescriptor;
 		userHistoricalOrders?: (address: string) => ChannelDescriptor;
+		userTradingContext?: (address: string, coin: string) => ChannelDescriptor;
 	};
 
 	// Protocol — used by hooks and assembled into ProtocolHooks for WS
@@ -109,6 +111,7 @@ export interface DexNormalizer {
 	parseSpotBalances?: (raw: unknown) => UserBalance[];
 	parseUserFundings?: (raw: unknown) => FundingPayment[];
 	parseHistoricalOrders?: (raw: unknown) => HistoricalOrder[];
+	parseUserTradingContext?: (raw: unknown) => UserTradingContext;
 
 	// REST snapshot fetchers
 	fetchOrderBook: (coin: string, agg?: AggregationLevel) => Promise<OrderBook>;

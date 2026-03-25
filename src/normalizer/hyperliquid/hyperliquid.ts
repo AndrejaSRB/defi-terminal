@@ -33,6 +33,7 @@ import {
 	parseUserBalances,
 	parseSpotBalances,
 	parseUserFundings,
+	parseUserTradingContext,
 } from './utils/parser';
 
 // ── HL-specific channel descriptor ──────────────────────────────────
@@ -48,7 +49,8 @@ type HLChannelDescriptor =
 	| { type: 'userFills'; user: string }
 	| { type: 'spotState'; user: string }
 	| { type: 'userFundings'; user: string }
-	| { type: 'userHistoricalOrders'; user: string };
+	| { type: 'userHistoricalOrders'; user: string }
+	| { type: 'activeAssetData'; user: string; coin: string };
 
 const HL_INFO_URL = 'https://api.hyperliquid.xyz/info';
 
@@ -99,6 +101,8 @@ function hlChannelKey(desc: ChannelDescriptor): string {
 			return `userFundings:${d.user}`;
 		case 'userHistoricalOrders':
 			return `userHistoricalOrders:${d.user}`;
+		case 'activeAssetData':
+			return `activeAssetData:${d.user}:${d.coin}`;
 		default:
 			return desc.type;
 	}
@@ -252,6 +256,11 @@ export const hyperliquidNormalizer: DexNormalizer = {
 			type: 'userHistoricalOrders',
 			user: address.toLowerCase(),
 		}),
+		userTradingContext: (address: string, coin: string) => ({
+			type: 'activeAssetData',
+			user: address.toLowerCase(),
+			coin,
+		}),
 	},
 
 	// Protocol
@@ -319,6 +328,16 @@ export const hyperliquidNormalizer: DexNormalizer = {
 			};
 		}
 
+		if (type === 'activeAssetData') {
+			const obj = msg.data as { user?: string; coin?: string };
+			const user = obj.user?.toLowerCase() ?? 'unknown';
+			const coin = obj.coin ?? 'unknown';
+			return {
+				channel: `activeAssetData:${user}:${coin}`,
+				payload: msg.data,
+			};
+		}
+
 		// Default: per-coin channels (activeAssetCtx, etc.)
 		const data = msg.data as Record<string, unknown>;
 		const coin = data.coin as string | undefined;
@@ -357,6 +376,7 @@ export const hyperliquidNormalizer: DexNormalizer = {
 	parseSpotBalances,
 	parseUserFundings,
 	parseHistoricalOrders,
+	parseUserTradingContext,
 
 	// REST
 	fetchOrderBook: async (coin: string, agg?: AggregationLevel) => {

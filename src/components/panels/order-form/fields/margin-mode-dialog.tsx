@@ -1,5 +1,5 @@
 import { memo, useCallback } from 'react';
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { activeTokenAtom } from '@/atoms/active-token';
 import { cn } from '@/lib/utils';
 import {
@@ -11,12 +11,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { marginModeAtom } from '../atoms/order-form-atoms';
 
 interface MarginModeDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	value: 'cross' | 'isolated';
-	onChange: (mode: 'cross' | 'isolated') => void;
 }
 
 const MODES = [
@@ -37,16 +36,16 @@ const MODES = [
 export const MarginModeDialog = memo(function MarginModeDialog({
 	open,
 	onOpenChange,
-	value,
-	onChange,
 }: MarginModeDialogProps) {
 	const token = useAtomValue(activeTokenAtom);
+	const currentMode = useAtomValue(marginModeAtom);
+	const setMarginMode = useSetAtom(marginModeAtom);
 
 	const handleSelect = useCallback(
 		(mode: 'cross' | 'isolated') => {
-			onChange(mode);
+			setMarginMode(mode);
 		},
-		[onChange],
+		[setMarginMode],
 	);
 
 	return (
@@ -58,7 +57,7 @@ export const MarginModeDialog = memo(function MarginModeDialog({
 
 				<div className="space-y-3">
 					{MODES.map((mode) => {
-						const isSelected = mode.value === value;
+						const isSelected = mode.value === currentMode;
 						return (
 							<button
 								key={mode.value}

@@ -22,7 +22,7 @@ import {
 	slToggleAtom,
 } from '../atoms/order-form-atoms';
 import {
-	availableMarginAtom,
+	availableToTradeAtom,
 	activePositionAtom,
 	markPriceAtom,
 	orderValueAtom,
@@ -91,7 +91,7 @@ export function useOrderFormData(): OrderFormData {
 	const slToggle = useAtomValue(slToggleAtom);
 
 	const markPriceRaw = useAtomValue(markPriceAtom);
-	const availableMarginRaw = useAtomValue(availableMarginAtom);
+	const availableMarginRaw = useAtomValue(availableToTradeAtom);
 	const position = useAtomValue(activePositionAtom);
 	const orderValueRaw = useDeferredValue(useAtomValue(orderValueAtom));
 	const marginRequiredRaw = useDeferredValue(useAtomValue(marginRequiredAtom));

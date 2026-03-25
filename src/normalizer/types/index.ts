@@ -158,6 +158,17 @@ export interface MarginSummary {
 	withdrawable: string;
 }
 
+// ── User Trading Context ─────────────────────────────────────────────
+export interface UserTradingContext {
+	coin: string;
+	leverage: number;
+	marginMode: 'cross' | 'isolated';
+	maxTradeSzBuy: number;
+	maxTradeSzSell: number;
+	availableToTradeBuy: number;
+	availableToTradeSell: number;
+}
+
 // ── Aggregation ──────────────────────────────────────────────────────
 export interface AggregationLevel {
 	label: string;

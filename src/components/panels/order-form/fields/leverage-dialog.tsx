@@ -1,7 +1,8 @@
-import { memo, useState, useCallback } from 'react';
-import { useAtomValue } from 'jotai';
+import { memo, useState, useCallback, useEffect } from 'react';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { activeTokenAtom } from '@/atoms/active-token';
 import { activeMetaAtom } from '../atoms/order-form-derived';
+import { leverageAtom } from '../atoms/order-form-atoms';
 import {
 	Dialog,
 	DialogContent,
@@ -17,22 +18,28 @@ import { Slider } from '@/components/ui/slider';
 interface LeverageDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	value: number;
-	onChange: (leverage: number) => void;
 }
 
 export const LeverageDialog = memo(function LeverageDialog({
 	open,
 	onOpenChange,
-	value,
-	onChange,
 }: LeverageDialogProps) {
 	const token = useAtomValue(activeTokenAtom);
 	const meta = useAtomValue(activeMetaAtom);
+	const currentLeverage = useAtomValue(leverageAtom);
+	const setLeverage = useSetAtom(leverageAtom);
 	const maxLeverage = meta?.maxLeverage ?? 50;
 
-	const [localValue, setLocalValue] = useState(value);
-	const [inputValue, setInputValue] = useState(value.toString());
+	const [localValue, setLocalValue] = useState(currentLeverage);
+	const [inputValue, setInputValue] = useState(currentLeverage.toString());
+
+	// Sync local state when dialog opens
+	useEffect(() => {
+		if (open) {
+			setLocalValue(currentLeverage);
+			setInputValue(currentLeverage.toString());
+		}
+	}, [open, currentLeverage]);
 
 	const handleSliderChange = useCallback((values: number[]) => {
 		const num = values[0];
@@ -52,23 +59,12 @@ export const LeverageDialog = memo(function LeverageDialog({
 	);
 
 	const handleConfirm = useCallback(() => {
-		onChange(localValue);
+		setLeverage(localValue);
 		onOpenChange(false);
-	}, [localValue, onChange, onOpenChange]);
-
-	const handleOpenChange = useCallback(
-		(nextOpen: boolean) => {
-			if (nextOpen) {
-				setLocalValue(value);
-				setInputValue(value.toString());
-			}
-			onOpenChange(nextOpen);
-		},
-		[value, onOpenChange],
-	);
+	}, [localValue, setLeverage, onOpenChange]);
 
 	return (
-		<Dialog open={open} onOpenChange={handleOpenChange}>
+		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Adjust Leverage</DialogTitle>

@@ -3,9 +3,10 @@ import { safeParseFloat } from '@/lib/numbers';
 import { activeTokenAtom } from '@/atoms/active-token';
 import { activeAssetDataAtom } from '@/atoms/active-asset';
 import { assetMetaAtom } from '@/atoms/asset-meta';
-import { userMarginAtom } from '@/atoms/user/balances';
 import { userPositionsAtom } from '@/atoms/user/positions';
+import { userTradingContextAtom } from '@/atoms/user/trading-context';
 import {
+	orderSideAtom,
 	orderTypeAtom,
 	limitPriceAtom,
 	sizeAtom,
@@ -15,9 +16,28 @@ import {
 
 // ── Narrow selectors from global atoms ──────────────────────────────
 
-export const availableMarginAtom = atom((get) => {
-	const margin = get(userMarginAtom);
-	return margin ? safeParseFloat(margin.withdrawable) : 0;
+export const availableToTradeAtom = atom((get) => {
+	const ctx = get(userTradingContextAtom);
+	if (!ctx) return 0;
+	const side = get(orderSideAtom);
+	return side === 'long' ? ctx.availableToTradeBuy : ctx.availableToTradeSell;
+});
+
+export const maxTradeSizeAtom = atom((get) => {
+	const ctx = get(userTradingContextAtom);
+	if (!ctx) return 0;
+	const side = get(orderSideAtom);
+	return side === 'long' ? ctx.maxTradeSzBuy : ctx.maxTradeSzSell;
+});
+
+export const serverLeverageAtom = atom((get) => {
+	const ctx = get(userTradingContextAtom);
+	return ctx?.leverage ?? null;
+});
+
+export const serverMarginModeAtom = atom((get) => {
+	const ctx = get(userTradingContextAtom);
+	return ctx?.marginMode ?? null;
 });
 
 export const activePositionAtom = atom((get) => {
@@ -66,11 +86,10 @@ export const marginRequiredAtom = atom((get) => {
 });
 
 export const maxSizeInCoinAtom = atom((get) => {
-	const margin = get(availableMarginAtom);
-	const leverage = get(leverageAtom);
+	const available = get(availableToTradeAtom);
 	const price = get(effectivePriceAtom);
 	if (price <= 0) return 0;
-	return (margin * leverage) / price;
+	return available / price;
 });
 
 export const sliderPercentDerivedAtom = atom((get) => {

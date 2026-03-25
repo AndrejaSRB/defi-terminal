@@ -11,6 +11,7 @@ import { useDexUserBalances } from '@/hooks/user/use-dex-user-balances';
 import { useDexUserSpot } from '@/hooks/user/use-dex-user-spot';
 import { useDexUserFundings } from '@/hooks/user/use-dex-user-fundings';
 import { useDexUserOrderHistory } from '@/hooks/user/use-dex-user-order-history';
+import { useDexUserTradingContext } from '@/hooks/user/use-dex-user-trading-context';
 import { useDocumentTitle } from '@/hooks/use-document-title';
 
 export function DexProvider({ children }: { children: React.ReactNode }) {
@@ -27,6 +28,7 @@ export function DexProvider({ children }: { children: React.ReactNode }) {
 	useDexUserSpot();
 	useDexUserFundings();
 	useDexUserOrderHistory();
+	useDexUserTradingContext();
 	useDocumentTitle();
 
 	return <>{children}</>;

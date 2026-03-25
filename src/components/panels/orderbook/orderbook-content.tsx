@@ -8,17 +8,20 @@ import { ViewToggle } from './view-toggle';
 import { OrderBookRow } from './orderbook-row';
 import { OrderBookSkeleton } from './orderbook-skeleton';
 
+const MAX_ROWS_PER_SIDE = 11;
+const MIN_ROW_HEIGHT = 22;
+const ROW_GAP = 2;
+
 function useVisibleRows(ref: React.RefObject<HTMLDivElement | null>) {
-	const [count, setCount] = useState(20);
+	const [count, setCount] = useState(MAX_ROWS_PER_SIDE);
 
 	const measure = useCallback(() => {
 		if (!ref.current) return;
-		const containerHeight = ref.current.clientHeight;
-		const firstRow = ref.current.querySelector('[data-ob-row]');
-		const rowHeight = firstRow ? firstRow.getBoundingClientRect().height : 22;
-		if (rowHeight > 0) {
-			setCount(Math.floor(containerHeight / rowHeight));
-		}
+		const height = ref.current.clientHeight;
+		const fitCount = Math.floor(
+			(height + ROW_GAP) / (MIN_ROW_HEIGHT + ROW_GAP),
+		);
+		setCount(Math.min(Math.max(fitCount, 0), MAX_ROWS_PER_SIDE));
 	}, [ref]);
 
 	useEffect(() => {
@@ -31,13 +34,37 @@ function useVisibleRows(ref: React.RefObject<HTMLDivElement | null>) {
 	return count;
 }
 
+function useNewPriceLevels(
+	asks: { rawPrice: number }[],
+	bids: { rawPrice: number }[],
+) {
+	const prevPricesRef = useRef<Set<number>>(new Set());
+	const newPrices = new Set<number>();
+
+	const currentPrices = new Set<number>();
+	for (const level of asks) currentPrices.add(level.rawPrice);
+	for (const level of bids) currentPrices.add(level.rawPrice);
+
+	if (prevPricesRef.current.size > 0) {
+		for (const price of currentPrices) {
+			if (!prevPricesRef.current.has(price)) {
+				newPrices.add(price);
+			}
+		}
+	}
+
+	prevPricesRef.current = currentPrices;
+	return newPrices;
+}
+
 export function OrderBookContent() {
-	const { asks, bids, spread, isLoading } = useOrderbookData();
+	const { asks, bids, spread, isLoading } = useOrderbookData(MAX_ROWS_PER_SIDE);
 	const { view, setView } = useOrderbookView();
 	const asksRef = useRef<HTMLDivElement>(null);
 	const bidsRef = useRef<HTMLDivElement>(null);
-	const asksVisible = useVisibleRows(asksRef);
-	const bidsVisible = useVisibleRows(bidsRef);
+	const asksCount = useVisibleRows(asksRef);
+	const bidsCount = useVisibleRows(bidsRef);
+	const newPrices = useNewPriceLevels(asks, bids);
 
 	if (isLoading) {
 		return <OrderBookSkeleton />;
@@ -47,8 +74,8 @@ export function OrderBookContent() {
 	const showBids = view === 'both' || view === 'bids';
 	const isBothView = view === 'both';
 
-	const visibleAsks = asks.slice(-asksVisible);
-	const visibleBids = bids.slice(0, bidsVisible);
+	const visibleAsks = asks.slice(-asksCount);
+	const visibleBids = bids.slice(0, bidsCount);
 
 	return (
 		<div className="flex h-full flex-col">
@@ -70,12 +97,16 @@ export function OrderBookContent() {
 				<div
 					ref={asksRef}
 					className={cn(
-						'flex-1 overflow-hidden',
-						isBothView && 'flex flex-col justify-end',
+						'flex flex-1 flex-col gap-0.5 overflow-hidden',
+						isBothView && 'justify-end',
 					)}
 				>
 					{visibleAsks.map((level) => (
-						<OrderBookRow key={level.rawPrice} level={level} />
+						<OrderBookRow
+							key={level.rawPrice}
+							level={level}
+							isNew={newPrices.has(level.rawPrice)}
+						/>
 					))}
 				</div>
 			)}
@@ -87,9 +118,16 @@ export function OrderBookContent() {
 			</div>
 
 			{showBids && (
-				<div ref={bidsRef} className="flex-1 overflow-hidden">
+				<div
+					ref={bidsRef}
+					className="flex flex-1 flex-col gap-0.5 overflow-hidden"
+				>
 					{visibleBids.map((level) => (
-						<OrderBookRow key={level.rawPrice} level={level} />
+						<OrderBookRow
+							key={level.rawPrice}
+							level={level}
+							isNew={newPrices.has(level.rawPrice)}
+						/>
 					))}
 				</div>
 			)}

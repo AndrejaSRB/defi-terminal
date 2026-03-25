@@ -19,5 +19,6 @@ export type {
 	HlUserFill,
 	HlHistoricalOrder,
 	HlFundingPayment,
+	HlActiveAssetData,
 	HlSpotBalance,
 } from './api';

@@ -23,14 +23,8 @@ export function OrderFormContent() {
 		<div className="flex h-full flex-col gap-3 overflow-y-auto p-3">
 			{/* Margin Mode + Leverage */}
 			<div className="flex gap-2">
-				<MarginModeButton
-					mode={data.marginMode}
-					onChange={actions.setMarginMode}
-				/>
-				<LeverageButton
-					leverage={data.leverage}
-					onChange={actions.setLeverage}
-				/>
+				<MarginModeButton />
+				<LeverageButton />
 			</div>
 
 			{/* Order Type */}

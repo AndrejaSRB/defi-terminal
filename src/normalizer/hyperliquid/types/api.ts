@@ -115,6 +115,17 @@ export interface HlFundingPayment {
 	nSamples: number | null;
 }
 
+// ── Active Asset Data (per-user) ─────────────────────────────────────
+
+export interface HlActiveAssetData {
+	user: string;
+	coin: string;
+	leverage: { type: string; value: number };
+	maxTradeSzs: [string, string];
+	availableToTrade: [string, string];
+	markPx: string;
+}
+
 // ── Spot State ───────────────────────────────────────────────────────
 
 export interface HlSpotBalance {

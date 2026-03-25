@@ -12,6 +12,7 @@ import type {
 	UserFill,
 	FundingPayment,
 	MarginSummary,
+	UserTradingContext,
 } from '@/normalizer/types';
 import type {
 	ActiveAssetCtx,
@@ -21,6 +22,7 @@ import type {
 	HlHistoricalOrder,
 	HlUserFill,
 	HlFundingPayment,
+	HlActiveAssetData,
 	HlSpotBalance,
 	HlOpenOrdersResponse,
 	HlTrade,
@@ -296,4 +298,19 @@ export function parseHistoricalOrders(raw: unknown): HistoricalOrder[] {
 			statusTimestamp: h.statusTimestamp,
 		};
 	});
+}
+
+export function parseUserTradingContext(raw: unknown): UserTradingContext {
+	const data = raw as HlActiveAssetData;
+	const marginMode = data.leverage.type === 'isolated' ? 'isolated' : 'cross';
+
+	return {
+		coin: data.coin,
+		leverage: data.leverage.value,
+		marginMode,
+		maxTradeSzBuy: parseFloat(data.maxTradeSzs[0]),
+		maxTradeSzSell: parseFloat(data.maxTradeSzs[1]),
+		availableToTradeBuy: parseFloat(data.availableToTrade[0]),
+		availableToTradeSell: parseFloat(data.availableToTrade[1]),
+	};
 }

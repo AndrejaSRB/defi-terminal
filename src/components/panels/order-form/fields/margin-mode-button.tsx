@@ -1,16 +1,11 @@
 import { memo, useCallback, useState } from 'react';
+import { useAtomValue } from 'jotai';
 import { Button } from '@/components/ui/button';
+import { marginModeAtom } from '../atoms/order-form-atoms';
 import { MarginModeDialog } from './margin-mode-dialog';
 
-interface MarginModeButtonProps {
-	mode: 'cross' | 'isolated';
-	onChange: (mode: 'cross' | 'isolated') => void;
-}
-
-export const MarginModeButton = memo(function MarginModeButton({
-	mode,
-	onChange,
-}: MarginModeButtonProps) {
+export const MarginModeButton = memo(function MarginModeButton() {
+	const mode = useAtomValue(marginModeAtom);
 	const [open, setOpen] = useState(false);
 
 	const handleClick = useCallback(() => setOpen(true), []);
@@ -25,12 +20,7 @@ export const MarginModeButton = memo(function MarginModeButton({
 			>
 				{mode}
 			</Button>
-			<MarginModeDialog
-				open={open}
-				onOpenChange={setOpen}
-				value={mode}
-				onChange={onChange}
-			/>
+			<MarginModeDialog open={open} onOpenChange={setOpen} />
 		</>
 	);
 });

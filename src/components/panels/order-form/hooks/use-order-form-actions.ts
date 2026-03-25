@@ -22,12 +22,14 @@ import {
 	slToggleAtom,
 } from '../atoms/order-form-atoms';
 import {
-	availableMarginAtom,
+	availableToTradeAtom,
 	activePositionAtom,
 	activeMetaAtom,
 	markPriceAtom,
 	effectivePriceAtom,
 	maxSizeInCoinAtom,
+	serverLeverageAtom,
+	serverMarginModeAtom,
 } from '../atoms/order-form-derived';
 import { validateOrderForm } from '../validators/order-form-validators';
 import type { OrderFormValues } from '../validators/types';
@@ -104,6 +106,18 @@ export function useOrderFormActions(): OrderFormActions {
 		}
 	}, [token, resetForm]);
 
+	// Sync form atoms from server trading context
+	const serverLeverage = useAtomValue(serverLeverageAtom);
+	const serverMode = useAtomValue(serverMarginModeAtom);
+
+	useEffect(() => {
+		if (serverLeverage !== null) setLeverage(serverLeverage);
+	}, [serverLeverage, setLeverage]);
+
+	useEffect(() => {
+		if (serverMode !== null) setMarginMode(serverMode);
+	}, [serverMode, setMarginMode]);
+
 	const setOrderType = useCallback(
 		(type: 'market' | 'limit') => {
 			setOrderTypeAtom(type);
@@ -145,7 +159,7 @@ export function useOrderFormActions(): OrderFormActions {
 		const side = store.get(orderSideAtom);
 		const type = store.get(orderTypeAtom);
 		const mark = store.get(markPriceAtom);
-		const margin = store.get(availableMarginAtom);
+		const margin = store.get(availableToTradeAtom);
 		const leverage = store.get(leverageAtom);
 		const position = store.get(activePositionAtom);
 		const meta = store.get(activeMetaAtom);
