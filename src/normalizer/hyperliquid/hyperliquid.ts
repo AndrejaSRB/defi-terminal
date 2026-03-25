@@ -365,7 +365,9 @@ export const hyperliquidNormalizer: DexNormalizer = {
 
 	// Estimations
 	estimateLiquidationPrice: ({ side, entryPrice, leverage }) => {
-		// HL simplified formula: uses maintenance margin rate ~0.5% (tier 0)
+		// Simplified estimate using tier 0 maintenance margin rate (0.5%).
+		// Real liq price depends on account equity, other positions, and tiered MM rates.
+		// Accurate enough for pre-trade display; server computes exact value post-fill.
 		const mmRate = 0.005;
 		if (side === 'long') {
 			return entryPrice * (1 - 1 / leverage + mmRate);

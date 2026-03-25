@@ -9,26 +9,32 @@ interface SubmitButtonProps {
 		| 'deposit'
 		| 'place-trade'
 		| 'not-enough-margin'
-		| 'enter-size';
+		| 'enter-size'
+		| 'no-position';
 	side: 'long' | 'short';
+	token: string;
 	onClick: () => void;
 }
 
-const LABELS: Record<SubmitButtonProps['state'], string> = {
+const LABELS: Record<string, string> = {
 	connect: 'Connect Wallet',
 	deposit: 'Deposit',
 	'enter-size': 'Enter Size',
-	'place-trade': 'Place Trade',
 	'not-enough-margin': 'Not Enough Margin',
+	'no-position': 'Reduce Only Too Large',
 };
 
 export const SubmitButton = memo(function SubmitButton({
 	state,
 	side,
+	token,
 	onClick,
 }: SubmitButtonProps) {
 	const { login } = useAuth();
-	const isDisabled = state === 'not-enough-margin' || state === 'enter-size';
+	const isDisabled =
+		state === 'not-enough-margin' ||
+		state === 'enter-size' ||
+		state === 'no-position';
 	const isLong = side === 'long';
 
 	const handleClick = useCallback(() => {
@@ -38,6 +44,11 @@ export const SubmitButton = memo(function SubmitButton({
 		}
 		onClick();
 	}, [state, login, onClick]);
+
+	const label =
+		state === 'place-trade'
+			? `${isLong ? 'Buy' : 'Sell'} ${token}`
+			: LABELS[state];
 
 	return (
 		<Button
@@ -52,7 +63,7 @@ export const SubmitButton = memo(function SubmitButton({
 				!isDisabled && !isLong && 'bg-red-500/90 text-white hover:bg-red-500',
 			)}
 		>
-			{LABELS[state]}
+			{label}
 		</Button>
 	);
 });

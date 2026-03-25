@@ -4,6 +4,7 @@ import { activeTokenAtom } from '@/atoms/active-token';
 import { activeNormalizerAtom } from '@/atoms/dex';
 import { useAuth } from '@/hooks/use-auth';
 import { safeParseFloat } from '@/lib/numbers';
+import { safeFormatPrice, safeFormatSize } from '@/lib/format';
 import {
 	orderSideAtom,
 	orderTypeAtom,
@@ -14,11 +15,7 @@ import {
 	marginModeAtom,
 	leverageAtom,
 	tpslEnabledAtom,
-	tpPriceAtom,
-	tpGainAtom,
 	tpToggleAtom,
-	slPriceAtom,
-	slLossAtom,
 	slToggleAtom,
 	slippageAtom,
 } from '../atoms/order-form-atoms';
@@ -30,6 +27,11 @@ import {
 	orderValueAtom,
 	marginRequiredAtom,
 	estLiquidationPriceAtom,
+	priceDecimalsAtom,
+	liveTpPriceAtom,
+	liveTpGainAtom,
+	liveSlPriceAtom,
+	liveSlLossAtom,
 	sliderPercentDerivedAtom,
 } from '../atoms/order-form-derived';
 
@@ -57,13 +59,16 @@ export interface OrderFormData {
 	slToggle: 'usd' | 'pct';
 
 	szDecimals: number;
+	priceDecimals: number;
+	isReady: boolean;
 
 	submitState:
 		| 'connect'
 		| 'deposit'
 		| 'place-trade'
 		| 'not-enough-margin'
-		| 'enter-size';
+		| 'enter-size'
+		| 'no-position';
 	info: {
 		liquidationPrice: string;
 		orderValue: string;
@@ -88,11 +93,11 @@ export function useOrderFormData(): OrderFormData {
 	const leverage = useAtomValue(leverageAtom);
 
 	const tpslEnabled = useAtomValue(tpslEnabledAtom);
-	const tpPrice = useAtomValue(tpPriceAtom);
-	const tpGain = useAtomValue(tpGainAtom);
+	const tpPrice = useAtomValue(liveTpPriceAtom);
+	const tpGain = useAtomValue(liveTpGainAtom);
 	const tpToggle = useAtomValue(tpToggleAtom);
-	const slPrice = useAtomValue(slPriceAtom);
-	const slLoss = useAtomValue(slLossAtom);
+	const slPrice = useAtomValue(liveSlPriceAtom);
+	const slLoss = useAtomValue(liveSlLossAtom);
 	const slToggle = useAtomValue(slToggleAtom);
 
 	const markPriceRaw = useAtomValue(markPriceAtom);
@@ -102,6 +107,7 @@ export function useOrderFormData(): OrderFormData {
 	const orderValueRaw = useDeferredValue(useAtomValue(orderValueAtom));
 	const marginRequiredRaw = useDeferredValue(useAtomValue(marginRequiredAtom));
 	const sliderPercent = useAtomValue(sliderPercentDerivedAtom);
+	const priceDecimals = useAtomValue(priceDecimalsAtom);
 	const estLiqPrice = useDeferredValue(useAtomValue(estLiquidationPriceAtom));
 	const slippage = useAtomValue(slippageAtom);
 
@@ -111,6 +117,7 @@ export function useOrderFormData(): OrderFormData {
 		const submitState: OrderFormData['submitState'] = (() => {
 			if (!isAuthenticated) return 'connect';
 			if (availableMarginRaw <= 0) return 'deposit';
+			if (reduceOnly && !position) return 'no-position';
 			if (sizeNum <= 0) return 'enter-size';
 			if (!reduceOnly && marginRequiredRaw > availableMarginRaw)
 				return 'not-enough-margin';
@@ -119,7 +126,8 @@ export function useOrderFormData(): OrderFormData {
 
 		const currentPosition = position
 			? {
-					size: normalizer.formatSize(
+					size: safeFormatSize(
+						normalizer,
 						safeParseFloat(position.size),
 						position.coin,
 					),
@@ -130,7 +138,9 @@ export function useOrderFormData(): OrderFormData {
 		return {
 			token,
 			markPrice:
-				markPriceRaw > 0 ? normalizer.formatPrice(markPriceRaw, token) : '--',
+				markPriceRaw > 0
+					? safeFormatPrice(normalizer, markPriceRaw, token)
+					: '--',
 			side,
 			orderType,
 			limitPrice,
@@ -150,10 +160,14 @@ export function useOrderFormData(): OrderFormData {
 			slLoss,
 			slToggle,
 			szDecimals: meta?.szDecimals ?? 2,
+			priceDecimals,
+			isReady: markPriceRaw > 0,
 			submitState,
 			info: {
 				liquidationPrice:
-					estLiqPrice > 0 ? normalizer.formatPrice(estLiqPrice, token) : 'N/A',
+					estLiqPrice > 0
+						? safeFormatPrice(normalizer, estLiqPrice, token)
+						: 'N/A',
 				orderValue:
 					orderValueRaw > 0
 						? `$${orderValueRaw.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
@@ -183,6 +197,7 @@ export function useOrderFormData(): OrderFormData {
 		availableMarginRaw,
 		position,
 		meta,
+		priceDecimals,
 		estLiqPrice,
 		orderValueRaw,
 		marginRequiredRaw,

@@ -14,10 +14,15 @@ import { TpInput } from './fields/tp-input';
 import { SlInput } from './fields/sl-input';
 import { SubmitButton } from './fields/submit-button';
 import { OrderInfoFooter } from './fields/order-info-footer';
+import { OrderFormSkeleton } from './order-form-skeleton';
 
 export function OrderFormContent() {
 	const data = useOrderFormData();
 	const actions = useOrderFormActions();
+
+	if (!data.isReady) {
+		return <OrderFormSkeleton />;
+	}
 
 	return (
 		<div className="flex h-full flex-col gap-3 overflow-y-auto p-3">
@@ -46,7 +51,7 @@ export function OrderFormContent() {
 					value={data.limitPrice}
 					onChange={actions.setLimitPrice}
 					label="Limit Price"
-					maxDecimals={2}
+					maxDecimals={data.priceDecimals}
 				/>
 			)}
 
@@ -81,7 +86,7 @@ export function OrderFormContent() {
 					onGainChange={actions.setTpGain}
 					toggle={data.tpToggle}
 					onToggleChange={actions.setTpToggle}
-					maxDecimals={2}
+					maxDecimals={data.priceDecimals}
 				/>
 				<SlInput
 					price={data.slPrice}
@@ -90,7 +95,7 @@ export function OrderFormContent() {
 					onLossChange={actions.setSlLoss}
 					toggle={data.slToggle}
 					onToggleChange={actions.setSlToggle}
-					maxDecimals={2}
+					maxDecimals={data.priceDecimals}
 				/>
 			</TpslSection>
 
@@ -101,6 +106,7 @@ export function OrderFormContent() {
 			<SubmitButton
 				state={data.submitState}
 				side={data.side}
+				token={data.token}
 				onClick={actions.handleSubmit}
 			/>
 
