@@ -8,6 +8,9 @@ import type {
 	Position,
 	Prices,
 	Trade,
+	UserBalance,
+	UserFill,
+	MarginSummary,
 } from './types';
 
 // ── Channel Descriptor ───────────────────────────────────────────────
@@ -64,6 +67,9 @@ export interface DexNormalizer {
 		userPositions: (address: string) => ChannelDescriptor;
 		userOpenOrders: (address: string) => ChannelDescriptor;
 		allAssetCtxs?: () => ChannelDescriptor;
+		userFills?: (address: string) => ChannelDescriptor;
+		userBalances?: (address: string) => ChannelDescriptor;
+		spotState?: (address: string) => ChannelDescriptor;
 	};
 
 	// Protocol — used by hooks and assembled into ProtocolHooks for WS
@@ -91,6 +97,12 @@ export interface DexNormalizer {
 	parseCandles: (raw: unknown) => Candle[];
 	parseCandle: (raw: unknown) => Candle;
 	parseAllAssetCtxs?: (raw: unknown) => Map<string, ActiveAssetData>;
+	parseUserFills?: (raw: unknown) => UserFill[];
+	parseUserBalances?: (raw: unknown) => {
+		margin: MarginSummary;
+		balances: UserBalance[];
+	};
+	parseSpotBalances?: (raw: unknown) => UserBalance[];
 
 	// REST snapshot fetchers
 	fetchOrderBook: (coin: string, agg?: AggregationLevel) => Promise<OrderBook>;
@@ -102,4 +114,5 @@ export interface DexNormalizer {
 		endTime?: number,
 	) => Promise<Candle[]>;
 	fetchAllAssetCtxs: () => Promise<Map<string, ActiveAssetData>>;
+	fetchUserFills?: (address: string, limit?: number) => Promise<UserFill[]>;
 }

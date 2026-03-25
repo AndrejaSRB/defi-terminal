@@ -2,20 +2,32 @@ import { useAtomValue } from 'jotai';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { userPositionsAtom } from '@/atoms/user/positions';
 import { userOpenOrdersAtom } from '@/atoms/user/orders';
+import {
+	userPerpsBalancesAtom,
+	userSpotBalancesAtom,
+} from '@/atoms/user/balances';
+import { BalancesContent } from './balances/balances-content';
 import { PositionsContent } from './positions/positions-content';
 import { OrdersContent } from './orders/orders-content';
+import { FillsContent } from './fills/fills-content';
 
 export function RecordsPanel() {
 	const positions = useAtomValue(userPositionsAtom);
 	const orders = useAtomValue(userOpenOrdersAtom);
+	const perps = useAtomValue(userPerpsBalancesAtom);
+	const spot = useAtomValue(userSpotBalancesAtom);
 
 	const posCount = positions.length;
 	const orderCount = orders.length;
+	const balanceCount = perps.length + spot.length;
 
 	return (
-		<Tabs defaultValue="positions" className="flex h-full flex-col gap-0">
+		<Tabs defaultValue="balances" className="flex h-full flex-col gap-0">
 			<div className="relative shrink-0">
 				<TabsList variant="line" className="h-8 rounded-none px-2">
+					<TabsTrigger value="balances" className="text-xs">
+						Balances{balanceCount > 0 ? ` (${balanceCount})` : ''}
+					</TabsTrigger>
 					<TabsTrigger value="positions" className="text-xs">
 						Positions{posCount > 0 ? ` (${posCount})` : ''}
 					</TabsTrigger>
@@ -35,6 +47,9 @@ export function RecordsPanel() {
 					}}
 				/>
 			</div>
+			<TabsContent value="balances" className="flex-1 overflow-auto">
+				<BalancesContent />
+			</TabsContent>
 			<TabsContent value="positions" className="flex-1 overflow-auto">
 				<PositionsContent />
 			</TabsContent>
@@ -42,9 +57,7 @@ export function RecordsPanel() {
 				<OrdersContent />
 			</TabsContent>
 			<TabsContent value="history" className="flex-1 overflow-auto">
-				<div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-					Trade History
-				</div>
+				<FillsContent />
 			</TabsContent>
 		</Tabs>
 	);

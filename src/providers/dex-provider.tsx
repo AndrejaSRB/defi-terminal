@@ -1,11 +1,14 @@
-import { useWsConnection } from '@/hooks/use-ws-connection';
-import { useDexPrices } from '@/hooks/use-dex-prices';
-import { useDexActiveAsset } from '@/hooks/use-dex-active-asset';
-import { useDexAllAssetCtxs } from '@/hooks/use-dex-all-asset-ctxs';
-import { useDexOrderbook } from '@/hooks/use-dex-orderbook';
-import { useDexTrades } from '@/hooks/use-dex-trades';
-import { useDexUserPositions } from '@/hooks/use-dex-user-positions';
-import { useDexUserOrders } from '@/hooks/use-dex-user-orders';
+import { useWsConnection } from '@/hooks/market/use-ws-connection';
+import { useDexPrices } from '@/hooks/market/use-dex-prices';
+import { useDexActiveAsset } from '@/hooks/market/use-dex-active-asset';
+import { useDexAllAssetCtxs } from '@/hooks/market/use-dex-all-asset-ctxs';
+import { useDexOrderbook } from '@/hooks/market/use-dex-orderbook';
+import { useDexTrades } from '@/hooks/market/use-dex-trades';
+import { useDexUserPositions } from '@/hooks/user/use-dex-user-positions';
+import { useDexUserOrders } from '@/hooks/user/use-dex-user-orders';
+import { useDexUserFills } from '@/hooks/user/use-dex-user-fills';
+import { useDexUserBalances } from '@/hooks/user/use-dex-user-balances';
+import { useDexUserSpot } from '@/hooks/user/use-dex-user-spot';
 import { useDocumentTitle } from '@/hooks/use-document-title';
 
 export function DexProvider({ children }: { children: React.ReactNode }) {
@@ -17,6 +20,9 @@ export function DexProvider({ children }: { children: React.ReactNode }) {
 	useDexTrades();
 	useDexUserPositions();
 	useDexUserOrders();
+	useDexUserFills();
+	useDexUserBalances();
+	useDexUserSpot();
 	useDocumentTitle();
 
 	return <>{children}</>;

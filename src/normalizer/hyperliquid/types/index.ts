@@ -16,4 +16,6 @@ export type {
 	HlMetaAndAssetCtxsResponse,
 	HlWsPerpsAssetCtx,
 	HlWsAllDexsAssetCtxs,
+	HlUserFill,
+	HlSpotBalance,
 } from './api';

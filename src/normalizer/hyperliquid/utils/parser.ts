@@ -7,12 +7,17 @@ import type {
 	Position,
 	Prices,
 	Trade,
+	UserBalance,
+	UserFill,
+	MarginSummary,
 } from '@/normalizer/types';
 import type {
 	ActiveAssetCtx,
 	AllMidsResponse,
 	AllDexsClearinghouseState,
 	HlCandle,
+	HlUserFill,
+	HlSpotBalance,
 	HlOpenOrdersResponse,
 	HlTrade,
 	L2BookEvent,
@@ -144,4 +149,89 @@ function parseSingleCandle(c: HlCandle): Candle {
 		close: c.c,
 		volume: c.v,
 	};
+}
+
+export function parseUserFills(raw: unknown): UserFill[] {
+	const data = raw as HlUserFill[];
+	return data.map((f) => ({
+		id: f.tid.toString(),
+		coin: f.coin,
+		side: f.side === 'B' ? 'buy' : 'sell',
+		dir: f.dir,
+		price: parseFloat(f.px),
+		size: parseFloat(f.sz),
+		closedPnl: parseFloat(f.closedPnl),
+		fee: parseFloat(f.fee),
+		feeToken: f.feeToken,
+		crossed: f.crossed,
+		hash: f.hash,
+		time: f.time,
+	}));
+}
+
+export function parseUserBalances(raw: unknown): {
+	margin: MarginSummary;
+	balances: UserBalance[];
+} {
+	const data = raw as AllDexsClearinghouseState;
+	const balances: UserBalance[] = [];
+
+	let totalAccountValue = 0;
+	let totalMarginUsed = 0;
+	let totalWithdrawable = 0;
+
+	for (const [dex, state] of data.clearinghouseStates) {
+		const av = parseFloat(state.marginSummary.accountValue);
+		const mu = parseFloat(state.marginSummary.totalMarginUsed);
+		const wd = parseFloat(state.withdrawable);
+
+		totalAccountValue += av;
+		totalMarginUsed += mu;
+		totalWithdrawable += wd;
+
+		const label = dex ? `USDC (${dex})` : 'USDC (Perps)';
+		if (av > 0 || wd > 0) {
+			balances.push({
+				coin: label,
+				totalBalance: av.toFixed(2),
+				availableBalance: wd.toFixed(2),
+				usdValue: av,
+				pnl: 0,
+				roi: 0,
+				type: 'perps',
+			});
+		}
+	}
+
+	return {
+		margin: {
+			accountValue: totalAccountValue.toFixed(2),
+			totalMarginUsed: totalMarginUsed.toFixed(2),
+			withdrawable: totalWithdrawable.toFixed(2),
+		},
+		balances,
+	};
+}
+
+export function parseSpotBalances(raw: unknown): UserBalance[] {
+	const data = raw as { spotState: { balances: HlSpotBalance[] } };
+	const balances = data.spotState?.balances ?? [];
+
+	return balances
+		.filter((b) => parseFloat(b.total) > 0)
+		.map((b): UserBalance => {
+			const total = parseFloat(b.total);
+			const hold = parseFloat(b.hold);
+			const entryNtl = parseFloat(b.entryNtl);
+
+			return {
+				coin: b.coin,
+				totalBalance: b.total,
+				availableBalance: (total - hold).toString(),
+				usdValue: entryNtl > 0 ? entryNtl : total,
+				pnl: 0,
+				roi: 0,
+				type: 'spot',
+			};
+		});
 }

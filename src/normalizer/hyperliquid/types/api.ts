@@ -58,3 +58,31 @@ export interface HlWsPerpsAssetCtx {
 export interface HlWsAllDexsAssetCtxs {
 	ctxs: [string, HlWsPerpsAssetCtx[]][];
 }
+
+// ── User Fills ───────────────────────────────────────────────────────
+
+export interface HlUserFill {
+	coin: string;
+	px: string;
+	sz: string;
+	side: 'B' | 'A';
+	time: number;
+	dir: string;
+	closedPnl: string;
+	hash: string;
+	oid: number;
+	crossed: boolean;
+	fee: string;
+	tid: number;
+	feeToken: string;
+}
+
+// ── Spot State ───────────────────────────────────────────────────────
+
+export interface HlSpotBalance {
+	coin: string;
+	token: number;
+	total: string;
+	hold: string;
+	entryNtl: string;
+}

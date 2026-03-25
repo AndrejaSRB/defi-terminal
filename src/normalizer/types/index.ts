@@ -95,6 +95,39 @@ export interface ActiveAssetData {
 	fundingInterval: string;
 }
 
+// ── User Fills ───────────────────────────────────────────────────────
+export interface UserFill {
+	id: string;
+	coin: string;
+	side: 'buy' | 'sell';
+	dir: string;
+	price: number;
+	size: number;
+	closedPnl: number;
+	fee: number;
+	feeToken: string;
+	crossed: boolean;
+	hash: string;
+	time: number;
+}
+
+// ── Balances ─────────────────────────────────────────────────────────
+export interface UserBalance {
+	coin: string;
+	totalBalance: string;
+	availableBalance: string;
+	usdValue: number;
+	pnl: number;
+	roi: number;
+	type: 'perps' | 'spot';
+}
+
+export interface MarginSummary {
+	accountValue: string;
+	totalMarginUsed: string;
+	withdrawable: string;
+}
+
 // ── Aggregation ──────────────────────────────────────────────────────
 export interface AggregationLevel {
 	label: string;

@@ -3,7 +3,7 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import { tradingWs } from '@/services/ws';
 import { activeNormalizerAtom } from '@/atoms/dex';
 import { userOpenOrdersAtom } from '@/atoms/user/orders';
-import { useAuth } from './use-auth';
+import { useAuth } from '../use-auth';
 
 export function useDexUserOrders() {
 	const normalizer = useAtomValue(activeNormalizerAtom);
