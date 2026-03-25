@@ -96,6 +96,7 @@ export function createDatafeed(
 						format: 'price',
 						minmov: 1,
 						pricescale,
+						volume_precision: 2,
 						has_intraday: true,
 						has_daily: true,
 						has_weekly_and_monthly: true,

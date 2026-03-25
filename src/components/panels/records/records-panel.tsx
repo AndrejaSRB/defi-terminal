@@ -2,7 +2,8 @@ import { useAtomValue } from 'jotai';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { userPositionsAtom } from '@/atoms/user/positions';
 import { userOpenOrdersAtom } from '@/atoms/user/orders';
-import { PositionsContent } from './positions-content';
+import { PositionsContent } from './positions/positions-content';
+import { OrdersContent } from './orders/orders-content';
 
 export function RecordsPanel() {
 	const positions = useAtomValue(userPositionsAtom);
@@ -38,9 +39,7 @@ export function RecordsPanel() {
 				<PositionsContent />
 			</TabsContent>
 			<TabsContent value="orders" className="flex-1 overflow-auto">
-				<div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-					Open Orders
-				</div>
+				<OrdersContent />
 			</TabsContent>
 			<TabsContent value="history" className="flex-1 overflow-auto">
 				<div className="flex h-full items-center justify-center text-sm text-muted-foreground">
