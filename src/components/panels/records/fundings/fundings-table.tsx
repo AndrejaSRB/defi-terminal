@@ -1,23 +1,21 @@
 import { cn } from '@/lib/utils';
-import { sentimentColor, directionColor } from '@/lib/colors';
+import { sentimentColor } from '@/lib/colors';
 import { CoinLink } from '../components/coin-link';
-import type { FormattedFill } from './hooks/use-fills-data';
+import type { FormattedFunding } from './hooks/use-fundings-data';
 
 const COLUMNS = [
 	'Time',
 	'Coin',
-	'Direction',
-	'Price',
 	'Size',
-	'Trade Value',
-	'Fee',
-	'Closed PNL',
+	'Position Side',
+	'Payment',
+	'Rate',
 ] as const;
 
-export function FillsTable({ fills }: { fills: FormattedFill[] }) {
+export function FundingsTable({ fundings }: { fundings: FormattedFunding[] }) {
 	return (
 		<div className="relative h-full overflow-x-auto no-scrollbar">
-			<table className="w-full min-w-[800px] text-xs">
+			<table className="w-full min-w-[700px] text-xs">
 				<thead className="sticky top-0 z-10 bg-card">
 					<tr className="border-b border-border">
 						{COLUMNS.map((col) => (
@@ -31,45 +29,39 @@ export function FillsTable({ fills }: { fills: FormattedFill[] }) {
 					</tr>
 				</thead>
 				<tbody>
-					{fills.map((fill) => (
+					{fundings.map((funding) => (
 						<tr
-							key={fill.id}
+							key={funding.id}
 							className="border-b border-border/50 hover:bg-muted/30"
 						>
 							<td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">
-								{fill.time}
+								{funding.time}
 							</td>
 							<td className="whitespace-nowrap px-2 py-1.5">
 								<CoinLink
-									coin={fill.coin}
-									displayName={fill.displayName}
-									dexName={fill.dexName}
+									coin={funding.coin}
+									displayName={funding.displayName}
+									dexName={funding.dexName}
 								/>
 							</td>
+							<td className="whitespace-nowrap px-2 py-1.5">{funding.size}</td>
 							<td
 								className={cn(
 									'whitespace-nowrap px-2 py-1.5',
-									directionColor(fill.dir),
+									funding.side === 'Long' ? 'text-green-400' : 'text-red-400',
 								)}
 							>
-								{fill.dir}
-							</td>
-							<td className="whitespace-nowrap px-2 py-1.5">{fill.price}</td>
-							<td className="whitespace-nowrap px-2 py-1.5">{fill.size}</td>
-							<td className="whitespace-nowrap px-2 py-1.5">
-								{fill.tradeValue}
-							</td>
-							<td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">
-								{fill.fee}
+								{funding.side}
 							</td>
 							<td
 								className={cn(
 									'whitespace-nowrap px-2 py-1.5',
-									sentimentColor(fill.closedPnlValue),
+									sentimentColor(funding.paymentValue),
 								)}
 							>
-								{fill.closedPnl}
+								{funding.payment}
 							</td>
+							<td className="whitespace-nowrap px-2 py-1.5">{funding.rate}</td>
 						</tr>
 					))}
 				</tbody>

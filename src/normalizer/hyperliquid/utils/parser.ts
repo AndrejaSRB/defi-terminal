@@ -1,6 +1,7 @@
 import type {
 	ActiveAssetData,
 	Candle,
+	HistoricalOrder,
 	OpenOrder,
 	OrderBook,
 	OrderType,
@@ -9,6 +10,7 @@ import type {
 	Trade,
 	UserBalance,
 	UserFill,
+	FundingPayment,
 	MarginSummary,
 } from '@/normalizer/types';
 import type {
@@ -16,7 +18,9 @@ import type {
 	AllMidsResponse,
 	AllDexsClearinghouseState,
 	HlCandle,
+	HlHistoricalOrder,
 	HlUserFill,
+	HlFundingPayment,
 	HlSpotBalance,
 	HlOpenOrdersResponse,
 	HlTrade,
@@ -234,4 +238,62 @@ export function parseSpotBalances(raw: unknown): UserBalance[] {
 				type: 'spot',
 			};
 		});
+}
+
+export function parseUserFundings(raw: unknown): FundingPayment[] {
+	const data = raw as HlFundingPayment[];
+	return data.map((f) => {
+		const szi = parseFloat(f.szi);
+		return {
+			time: f.time,
+			coin: f.coin,
+			usdc: parseFloat(f.usdc),
+			size: Math.abs(szi),
+			fundingRate: parseFloat(f.fundingRate),
+			side: szi >= 0 ? 'Long' : 'Short',
+		};
+	});
+}
+
+export function parseHistoricalOrders(raw: unknown): HistoricalOrder[] {
+	const data = raw as HlHistoricalOrder[];
+	return data.map((h) => {
+		const o = h.order;
+		const origSize = parseFloat(o.origSz);
+		const remainingSize = parseFloat(o.sz);
+		const filledSize = origSize - remainingSize;
+
+		const tpChild = o.children.find((c) => {
+			const child = c as Record<string, unknown>;
+			return (child.orderType as string)?.startsWith('Take Profit');
+		});
+		const slChild = o.children.find((c) => {
+			const child = c as Record<string, unknown>;
+			return (child.orderType as string)?.startsWith('Stop');
+		});
+
+		return {
+			id: o.oid.toString(),
+			coin: o.coin,
+			side: o.side === 'B' ? 'buy' : 'sell',
+			orderType: o.orderType,
+			dir: o.side === 'B' ? 'Open Long' : 'Open Short',
+			price: parseFloat(o.limitPx),
+			size: remainingSize,
+			filledSize,
+			origSize,
+			status: h.status,
+			reduceOnly: o.reduceOnly,
+			triggerCondition:
+				o.triggerCondition !== 'N/A' ? o.triggerCondition : null,
+			tp: tpChild
+				? parseFloat((tpChild as Record<string, unknown>).triggerPx as string)
+				: null,
+			sl: slChild
+				? parseFloat((slChild as Record<string, unknown>).triggerPx as string)
+				: null,
+			timestamp: o.timestamp,
+			statusTimestamp: h.statusTimestamp,
+		};
+	});
 }

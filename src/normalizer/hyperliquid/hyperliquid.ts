@@ -23,6 +23,7 @@ import {
 	parseActiveAsset,
 	parseCandle,
 	parseCandles,
+	parseHistoricalOrders,
 	parseOrderBook,
 	parsePrices,
 	parseTrades,
@@ -31,6 +32,7 @@ import {
 	parseUserFills,
 	parseUserBalances,
 	parseSpotBalances,
+	parseUserFundings,
 } from './utils/parser';
 
 // ── HL-specific channel descriptor ──────────────────────────────────
@@ -44,7 +46,9 @@ type HLChannelDescriptor =
 	| { type: 'candle'; coin: string; interval: string }
 	| { type: 'allDexsAssetCtxs' }
 	| { type: 'userFills'; user: string }
-	| { type: 'spotState'; user: string };
+	| { type: 'spotState'; user: string }
+	| { type: 'userFundings'; user: string }
+	| { type: 'userHistoricalOrders'; user: string };
 
 const HL_INFO_URL = 'https://api.hyperliquid.xyz/info';
 
@@ -91,6 +95,10 @@ function hlChannelKey(desc: ChannelDescriptor): string {
 			return `userFills:${d.user}`;
 		case 'spotState':
 			return `spotState:${d.user}`;
+		case 'userFundings':
+			return `userFundings:${d.user}`;
+		case 'userHistoricalOrders':
+			return `userHistoricalOrders:${d.user}`;
 		default:
 			return desc.type;
 	}
@@ -236,6 +244,14 @@ export const hyperliquidNormalizer: DexNormalizer = {
 			type: 'spotState',
 			user: address.toLowerCase(),
 		}),
+		userFundings: (address: string) => ({
+			type: 'userFundings',
+			user: address.toLowerCase(),
+		}),
+		userHistoricalOrders: (address: string) => ({
+			type: 'userHistoricalOrders',
+			user: address.toLowerCase(),
+		}),
 	},
 
 	// Protocol
@@ -279,6 +295,11 @@ export const hyperliquidNormalizer: DexNormalizer = {
 		if (type === 'candle') return parseWsCandle(msg.data);
 		if (type === 'allDexsAssetCtxs')
 			return { channel: 'allDexsAssetCtxs', payload: msg.data };
+		if (type === 'userFundings') {
+			const obj = msg.data as { user?: string };
+			const user = obj.user?.toLowerCase() ?? 'unknown';
+			return { channel: `userFundings:${user}`, payload: msg.data };
+		}
 		if (type === 'spotState') {
 			const obj = msg.data as { user?: string };
 			const user = obj.user?.toLowerCase() ?? 'unknown';
@@ -288,6 +309,14 @@ export const hyperliquidNormalizer: DexNormalizer = {
 			const obj = msg.data as { user?: string };
 			const user = obj.user?.toLowerCase() ?? 'unknown';
 			return { channel: `userFills:${user}`, payload: msg.data };
+		}
+		if (type === 'userHistoricalOrders') {
+			const obj = msg.data as { user?: string };
+			const user = obj.user?.toLowerCase() ?? 'unknown';
+			return {
+				channel: `userHistoricalOrders:${user}`,
+				payload: msg.data,
+			};
 		}
 
 		// Default: per-coin channels (activeAssetCtx, etc.)
@@ -326,6 +355,8 @@ export const hyperliquidNormalizer: DexNormalizer = {
 	parseUserFills,
 	parseUserBalances,
 	parseSpotBalances,
+	parseUserFundings,
+	parseHistoricalOrders,
 
 	// REST
 	fetchOrderBook: async (coin: string, agg?: AggregationLevel) => {

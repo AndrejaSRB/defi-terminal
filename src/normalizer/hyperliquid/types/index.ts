@@ -17,5 +17,7 @@ export type {
 	HlWsPerpsAssetCtx,
 	HlWsAllDexsAssetCtxs,
 	HlUserFill,
+	HlHistoricalOrder,
+	HlFundingPayment,
 	HlSpotBalance,
 } from './api';

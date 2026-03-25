@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { sentimentColor } from '@/lib/colors';
+import { CoinLink } from '../components/coin-link';
 import type { FormattedPosition } from './hooks/use-positions-data';
 
 const COLUMNS = [
@@ -15,15 +16,11 @@ const COLUMNS = [
 	'TP/SL',
 ] as const;
 
-interface PositionsTableProps {
-	positions: FormattedPosition[];
-	onSelectToken: (coin: string) => void;
-}
-
 export function PositionsTable({
 	positions,
-	onSelectToken,
-}: PositionsTableProps) {
+}: {
+	positions: FormattedPosition[];
+}) {
 	return (
 		<div className="relative h-full overflow-x-auto no-scrollbar">
 			<table className="w-full min-w-[900px] text-xs">
@@ -40,68 +37,67 @@ export function PositionsTable({
 					</tr>
 				</thead>
 				<tbody>
-					{positions.map((p) => {
-						const isLong = p.side === 'LONG';
+					{positions.map((position) => {
+						const isLong = position.side === 'LONG';
 						const badgeColor = isLong
 							? 'text-green-400 bg-green-400/10'
 							: 'text-red-400 bg-red-400/10';
 
 						return (
 							<tr
-								key={p.coin}
+								key={position.coin}
 								className="border-b border-border/50 hover:bg-muted/30"
 							>
 								<td className="whitespace-nowrap px-2 py-1.5">
 									<div className="flex items-center gap-1.5">
-										<button
-											type="button"
-											onClick={() => onSelectToken(p.coin)}
-											className="font-bold uppercase transition-colors hover:text-primary"
-										>
-											{p.displayName}
-										</button>
-										{p.dexName && (
-											<span className="text-[11px] text-muted-foreground">
-												{p.dexName}
-											</span>
-										)}
+										<CoinLink
+											coin={position.coin}
+											displayName={position.displayName}
+											dexName={position.dexName}
+										/>
 										<span
 											className={cn(
 												'rounded px-1 py-px text-[10px] font-medium',
 												badgeColor,
 											)}
 										>
-											{p.side} {p.leverage}
+											{position.side} {position.leverage}
 										</span>
 									</div>
 								</td>
-								<td className="whitespace-nowrap px-2 py-1.5">{p.size}</td>
 								<td className="whitespace-nowrap px-2 py-1.5">
-									{p.positionValue}
+									{position.size}
 								</td>
 								<td className="whitespace-nowrap px-2 py-1.5">
-									{p.entryPrice}
+									{position.positionValue}
 								</td>
-								<td className="whitespace-nowrap px-2 py-1.5">{p.markPrice}</td>
+								<td className="whitespace-nowrap px-2 py-1.5">
+									{position.entryPrice}
+								</td>
+								<td className="whitespace-nowrap px-2 py-1.5">
+									{position.markPrice}
+								</td>
 								<td className="whitespace-nowrap px-2 py-1.5">
 									<span
 										className={cn(
 											'inline-block min-w-[120px]',
-											sentimentColor(p.pnlValue),
+											sentimentColor(position.pnlValue),
 										)}
 									>
-										{p.pnl} ({p.roi})
+										{position.pnl} ({position.roi})
 									</span>
 								</td>
 								<td className="whitespace-nowrap px-2 py-1.5">
-									{p.liquidationPrice}
+									{position.liquidationPrice}
 								</td>
 								<td className="whitespace-nowrap px-2 py-1.5">
-									{p.marginUsed}
+									{position.marginUsed}
 								</td>
-								<td className="whitespace-nowrap px-2 py-1.5">{p.funding}</td>
 								<td className="whitespace-nowrap px-2 py-1.5">
-									{p.tp ?? '--'} / {p.sl ?? '--'}
+									{position.funding}
+								</td>
+								<td className="whitespace-nowrap px-2 py-1.5">
+									{position.tp ?? '--'} / {position.sl ?? '--'}
 								</td>
 							</tr>
 						);

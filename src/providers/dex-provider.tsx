@@ -9,6 +9,8 @@ import { useDexUserOrders } from '@/hooks/user/use-dex-user-orders';
 import { useDexUserFills } from '@/hooks/user/use-dex-user-fills';
 import { useDexUserBalances } from '@/hooks/user/use-dex-user-balances';
 import { useDexUserSpot } from '@/hooks/user/use-dex-user-spot';
+import { useDexUserFundings } from '@/hooks/user/use-dex-user-fundings';
+import { useDexUserOrderHistory } from '@/hooks/user/use-dex-user-order-history';
 import { useDocumentTitle } from '@/hooks/use-document-title';
 
 export function DexProvider({ children }: { children: React.ReactNode }) {
@@ -23,6 +25,8 @@ export function DexProvider({ children }: { children: React.ReactNode }) {
 	useDexUserFills();
 	useDexUserBalances();
 	useDexUserSpot();
+	useDexUserFundings();
+	useDexUserOrderHistory();
 	useDocumentTitle();
 
 	return <>{children}</>;

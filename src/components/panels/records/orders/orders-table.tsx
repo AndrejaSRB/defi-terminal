@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { CoinLink } from '../components/coin-link';
 import type { FormattedOrder } from './hooks/use-orders-data';
 
 const COLUMNS = [
@@ -13,12 +14,7 @@ const COLUMNS = [
 	'Time',
 ] as const;
 
-interface OrdersTableProps {
-	orders: FormattedOrder[];
-	onSelectToken: (coin: string) => void;
-}
-
-export function OrdersTable({ orders, onSelectToken }: OrdersTableProps) {
+export function OrdersTable({ orders }: { orders: FormattedOrder[] }) {
 	return (
 		<div className="relative h-full overflow-x-auto no-scrollbar">
 			<table className="w-full min-w-[800px] text-xs">
@@ -35,32 +31,25 @@ export function OrdersTable({ orders, onSelectToken }: OrdersTableProps) {
 					</tr>
 				</thead>
 				<tbody>
-					{orders.map((o) => {
+					{orders.map((order) => {
 						const sideColor =
-							o.side === 'buy'
+							order.side === 'buy'
 								? 'text-green-400 bg-green-400/10'
 								: 'text-red-400 bg-red-400/10';
 
 						return (
 							<tr
-								key={o.id}
+								key={order.id}
 								className="border-b border-border/50 hover:bg-muted/30"
 							>
 								<td className="whitespace-nowrap px-2 py-1.5">
 									<div className="flex items-center gap-1.5">
-										<button
-											type="button"
-											onClick={() => onSelectToken(o.coin)}
-											className="font-bold uppercase transition-colors hover:text-primary"
-										>
-											{o.displayName}
-										</button>
-										{o.dexName && (
-											<span className="text-[11px] text-muted-foreground">
-												{o.dexName}
-											</span>
-										)}
-										{o.isReduceOnly && (
+										<CoinLink
+											coin={order.coin}
+											displayName={order.displayName}
+											dexName={order.dexName}
+										/>
+										{order.isReduceOnly && (
 											<span className="rounded bg-muted px-1 py-px text-[10px] text-muted-foreground">
 												RO
 											</span>
@@ -74,25 +63,27 @@ export function OrdersTable({ orders, onSelectToken }: OrdersTableProps) {
 											sideColor,
 										)}
 									>
-										{o.side}
+										{order.side}
 									</span>
 								</td>
 								<td className="whitespace-nowrap px-2 py-1.5">
 									<span className="rounded bg-muted px-1 py-px text-[10px]">
-										{o.orderType}
+										{order.orderType}
 									</span>
 								</td>
-								<td className="whitespace-nowrap px-2 py-1.5">{o.price}</td>
-								<td className="whitespace-nowrap px-2 py-1.5">{o.size}</td>
-								<td className="whitespace-nowrap px-2 py-1.5">{o.filled}</td>
+								<td className="whitespace-nowrap px-2 py-1.5">{order.price}</td>
+								<td className="whitespace-nowrap px-2 py-1.5">{order.size}</td>
 								<td className="whitespace-nowrap px-2 py-1.5">
-									{o.triggerPrice ?? '--'}
+									{order.filled}
 								</td>
 								<td className="whitespace-nowrap px-2 py-1.5">
-									{o.tp ?? '--'} / {o.sl ?? '--'}
+									{order.triggerPrice ?? '--'}
+								</td>
+								<td className="whitespace-nowrap px-2 py-1.5">
+									{order.tp ?? '--'} / {order.sl ?? '--'}
 								</td>
 								<td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">
-									{o.timestamp}
+									{order.timestamp}
 								</td>
 							</tr>
 						);

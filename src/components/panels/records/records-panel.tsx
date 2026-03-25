@@ -10,6 +10,8 @@ import { BalancesContent } from './balances/balances-content';
 import { PositionsContent } from './positions/positions-content';
 import { OrdersContent } from './orders/orders-content';
 import { FillsContent } from './fills/fills-content';
+import { FundingsContent } from './fundings/fundings-content';
+import { OrderHistoryContent } from './order-history/order-history-content';
 
 export function RecordsPanel() {
 	const positions = useAtomValue(userPositionsAtom);
@@ -37,6 +39,12 @@ export function RecordsPanel() {
 					<TabsTrigger value="history" className="text-xs">
 						Trade History
 					</TabsTrigger>
+					<TabsTrigger value="order-history" className="text-xs">
+						Order History
+					</TabsTrigger>
+					<TabsTrigger value="funding" className="text-xs">
+						Funding History
+					</TabsTrigger>
 				</TabsList>
 				<div
 					className="absolute bottom-0 left-0 h-px w-full bg-border"
@@ -58,6 +66,12 @@ export function RecordsPanel() {
 			</TabsContent>
 			<TabsContent value="history" className="flex-1 overflow-auto">
 				<FillsContent />
+			</TabsContent>
+			<TabsContent value="order-history" className="flex-1 overflow-auto">
+				<OrderHistoryContent />
+			</TabsContent>
+			<TabsContent value="funding" className="flex-1 overflow-auto">
+				<FundingsContent />
 			</TabsContent>
 		</Tabs>
 	);

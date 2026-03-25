@@ -111,6 +111,36 @@ export interface UserFill {
 	time: number;
 }
 
+// ── Historical Order ─────────────────────────────────────────────────
+export interface HistoricalOrder {
+	id: string;
+	coin: string;
+	side: 'buy' | 'sell';
+	orderType: string;
+	dir: string;
+	price: number;
+	size: number;
+	filledSize: number;
+	origSize: number;
+	status: string;
+	reduceOnly: boolean;
+	triggerCondition: string | null;
+	tp: number | null;
+	sl: number | null;
+	timestamp: number;
+	statusTimestamp: number;
+}
+
+// ── Funding Payments ─────────────────────────────────────────────────
+export interface FundingPayment {
+	time: number;
+	coin: string;
+	usdc: number;
+	size: number;
+	fundingRate: number;
+	side: 'Long' | 'Short';
+}
+
 // ── Balances ─────────────────────────────────────────────────────────
 export interface UserBalance {
 	coin: string;

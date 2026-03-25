@@ -58,8 +58,8 @@ export function TerminalLayoutDesktop() {
 						{/* Records */}
 						<ResizablePanel
 							id="records-section"
-							defaultSize={270}
-							minSize={270}
+							defaultSize={isXl ? 490 : 236}
+							minSize={isXl ? 340 : 236}
 						>
 							<div className="relative h-full overflow-hidden rounded-sm border border-border bg-card">
 								<RecordsPanel />

@@ -3,6 +3,7 @@ import type {
 	AggregationLevel,
 	AssetMeta,
 	Candle,
+	HistoricalOrder,
 	OpenOrder,
 	OrderBook,
 	Position,
@@ -10,6 +11,7 @@ import type {
 	Trade,
 	UserBalance,
 	UserFill,
+	FundingPayment,
 	MarginSummary,
 } from './types';
 
@@ -70,6 +72,8 @@ export interface DexNormalizer {
 		userFills?: (address: string) => ChannelDescriptor;
 		userBalances?: (address: string) => ChannelDescriptor;
 		spotState?: (address: string) => ChannelDescriptor;
+		userFundings?: (address: string) => ChannelDescriptor;
+		userHistoricalOrders?: (address: string) => ChannelDescriptor;
 	};
 
 	// Protocol — used by hooks and assembled into ProtocolHooks for WS
@@ -103,6 +107,8 @@ export interface DexNormalizer {
 		balances: UserBalance[];
 	};
 	parseSpotBalances?: (raw: unknown) => UserBalance[];
+	parseUserFundings?: (raw: unknown) => FundingPayment[];
+	parseHistoricalOrders?: (raw: unknown) => HistoricalOrder[];
 
 	// REST snapshot fetchers
 	fetchOrderBook: (coin: string, agg?: AggregationLevel) => Promise<OrderBook>;

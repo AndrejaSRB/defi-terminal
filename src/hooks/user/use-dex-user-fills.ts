@@ -29,9 +29,8 @@ export function useDexUserFills() {
 			const fills = parse(wsData.fills ?? raw);
 
 			if (wsData.isSnapshot || !hasSnapshot) {
-				// First message or explicit snapshot — replace entirely
 				hasSnapshot = true;
-				setFills(fills.slice(0, MAX_FILLS));
+				setFills(fills.reverse().slice(0, MAX_FILLS));
 			} else {
 				// Live update — prepend new fills
 				setFills((prev) => [...fills, ...prev].slice(0, MAX_FILLS));

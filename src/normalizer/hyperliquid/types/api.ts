@@ -79,6 +79,44 @@ export interface HlUserFill {
 
 // ── Spot State ───────────────────────────────────────────────────────
 
+// ── Historical Orders ────────────────────────────────────────────────
+
+export interface HlHistoricalOrder {
+	order: {
+		coin: string;
+		side: 'B' | 'A';
+		limitPx: string;
+		sz: string;
+		oid: number;
+		timestamp: number;
+		triggerCondition: string;
+		isTrigger: boolean;
+		triggerPx: string;
+		children: unknown[];
+		isPositionTpsl: boolean;
+		reduceOnly: boolean;
+		orderType: string;
+		origSz: string;
+		tif: string | null;
+		cloid: string | null;
+	};
+	status: string;
+	statusTimestamp: number;
+}
+
+// ── Funding Payments ─────────────────────────────────────────────────
+
+export interface HlFundingPayment {
+	time: number;
+	coin: string;
+	usdc: string;
+	szi: string;
+	fundingRate: string;
+	nSamples: number | null;
+}
+
+// ── Spot State ───────────────────────────────────────────────────────
+
 export interface HlSpotBalance {
 	coin: string;
 	token: number;
