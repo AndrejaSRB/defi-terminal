@@ -185,15 +185,18 @@ export function parseUserBalances(raw: unknown): {
 	let totalAccountValue = 0;
 	let totalMarginUsed = 0;
 	let totalWithdrawable = 0;
+	let totalRawUsd = 0;
 
 	for (const [dex, state] of data.clearinghouseStates) {
 		const av = parseFloat(state.marginSummary.accountValue);
 		const mu = parseFloat(state.marginSummary.totalMarginUsed);
 		const wd = parseFloat(state.withdrawable);
+		const raw = parseFloat(state.marginSummary.totalRawUsd) || 0;
 
 		totalAccountValue += av;
 		totalMarginUsed += mu;
 		totalWithdrawable += wd;
+		totalRawUsd += raw;
 
 		const label = dex ? `USDC (${dex})` : 'USDC (Perps)';
 		if (av > 0 || wd > 0) {
@@ -214,6 +217,7 @@ export function parseUserBalances(raw: unknown): {
 			accountValue: totalAccountValue.toFixed(2),
 			totalMarginUsed: totalMarginUsed.toFixed(2),
 			withdrawable: totalWithdrawable.toFixed(2),
+			totalRawUsd: totalRawUsd.toFixed(2),
 		},
 		balances,
 	};

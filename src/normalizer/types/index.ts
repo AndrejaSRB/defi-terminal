@@ -156,6 +156,7 @@ export interface MarginSummary {
 	accountValue: string;
 	totalMarginUsed: string;
 	withdrawable: string;
+	totalRawUsd: string;
 }
 
 // ── User Trading Context ─────────────────────────────────────────────

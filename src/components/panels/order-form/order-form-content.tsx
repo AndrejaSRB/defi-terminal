@@ -105,8 +105,9 @@ export function OrderFormContent() {
 			{/* Submit */}
 			<SubmitButton
 				state={data.submitState}
+				label={data.submitLabel}
 				side={data.side}
-				token={data.token}
+				isSubmitting={data.isSubmitting}
 				onClick={actions.handleSubmit}
 			/>
 

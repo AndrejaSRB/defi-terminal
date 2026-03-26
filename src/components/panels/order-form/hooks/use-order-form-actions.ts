@@ -2,6 +2,13 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useAtomValue, useSetAtom, useStore } from 'jotai';
 import { toast } from 'sonner';
 import { activeTokenAtom } from '@/atoms/active-token';
+import { activeDexOnboardingAtom } from '@/atoms/dex';
+import {
+	onboardingBlockerAtom,
+	onboardingVersionAtom,
+	walletAddressAtom,
+} from '@/atoms/user/onboarding';
+import { useWalletSigner } from '@/hooks/use-wallet-signer';
 import { safeParseFloat } from '@/lib/numbers';
 import {
 	orderSideAtom,
@@ -23,6 +30,7 @@ import {
 	slToggleAtom,
 	slSourceAtom,
 	resetMarginOverridesAtom,
+	isSubmittingAtom,
 } from '../atoms/order-form-atoms';
 import {
 	availableToTradeAtom,
@@ -61,6 +69,7 @@ export function useOrderFormActions(): OrderFormActions {
 	const store = useStore();
 	const token = useAtomValue(activeTokenAtom);
 	const prevTokenRef = useRef(token);
+	const { sign } = useWalletSigner();
 
 	const setSideRaw = useSetAtom(orderSideAtom);
 	const setOrderTypeAtom = useSetAtom(orderTypeAtom);
@@ -303,7 +312,34 @@ export function useOrderFormActions(): OrderFormActions {
 		[setSlLossRaw, setSlPriceRaw, store],
 	);
 
-	const handleSubmit = useCallback(() => {
+	const handleSubmit = useCallback(async () => {
+		// Guard against double-click
+		if (store.get(isSubmittingAtom)) return;
+
+		// If an onboarding step is pending, execute it instead of validating
+		const blocker = store.get(onboardingBlockerAtom);
+		if (blocker) {
+			store.set(isSubmittingAtom, true);
+			const onboarding = store.get(activeDexOnboardingAtom);
+			const address = store.get(walletAddressAtom) ?? '';
+			try {
+				await onboarding.executeStep({
+					stepId: blocker.id,
+					walletAddress: address,
+					sign,
+				});
+				// Force onboarding atoms to recompute (localStorage changed)
+				store.set(onboardingVersionAtom, (prev) => prev + 1);
+			} catch (error) {
+				const msg =
+					error instanceof Error ? error.message : 'Onboarding step failed';
+				toast.error(msg);
+			} finally {
+				store.set(isSubmittingAtom, false);
+			}
+			return;
+		}
+
 		const side = store.get(orderSideAtom);
 		const type = store.get(orderTypeAtom);
 		const mark = store.get(markPriceAtom);
@@ -343,14 +379,13 @@ export function useOrderFormActions(): OrderFormActions {
 
 		const result = validateOrderForm(values);
 		if (!result.valid) {
-			// Show only the first error — user fixes it, then sees the next
 			toast.error(result.errors[0].message);
 			return;
 		}
 
 		// Static form — no actual placement yet
 		toast.success('Order form is valid');
-	}, [store]);
+	}, [store, sign]);
 
 	return {
 		setSide,

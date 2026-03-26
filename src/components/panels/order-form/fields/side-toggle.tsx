@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { cn } from '@/lib/utils';
+import { BUY_COLOR, SELL_COLOR, BUY_GLOW, SELL_GLOW } from '@/lib/colors';
 
 interface SideToggleProps {
 	value: 'long' | 'short';
@@ -18,8 +19,8 @@ export const SideToggle = memo(function SideToggle({
 				className={cn(
 					'absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-[5px] transition-all duration-200 ease-out',
 					isLong
-						? 'left-0.5 bg-green-500/90 shadow-[0_0_8px_rgba(34,197,94,0.3)]'
-						: 'left-[calc(50%+2px)] bg-red-500/90 shadow-[0_0_8px_rgba(239,68,68,0.3)]',
+						? `left-0.5 ${BUY_COLOR} ${BUY_GLOW}`
+						: `left-[calc(50%+2px)] ${SELL_COLOR} ${SELL_GLOW}`,
 				)}
 			/>
 			<button

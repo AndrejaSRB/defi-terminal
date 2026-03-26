@@ -54,3 +54,6 @@ export const resetMarginOverridesAtom = atom(null, (_get, set) => {
 
 // ── Slippage ────────────────────────────────────────────────────────
 export const slippageAtom = atom<number>(3);
+
+// ── Submission state ────────────────────────────────────────────────
+export const isSubmittingAtom = atom<boolean>(false);

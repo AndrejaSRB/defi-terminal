@@ -5,6 +5,7 @@ import { activeNormalizerAtom } from '@/atoms/dex';
 import { useAuth } from '@/hooks/use-auth';
 import { safeParseFloat } from '@/lib/numbers';
 import { safeFormatPrice, safeFormatSize } from '@/lib/format';
+import { onboardingBlockerAtom } from '@/atoms/user/onboarding';
 import {
 	orderSideAtom,
 	orderTypeAtom,
@@ -18,6 +19,7 @@ import {
 	tpToggleAtom,
 	slToggleAtom,
 	slippageAtom,
+	isSubmittingAtom,
 } from '../atoms/order-form-atoms';
 import {
 	availableToTradeAtom,
@@ -62,13 +64,9 @@ export interface OrderFormData {
 	priceDecimals: number;
 	isReady: boolean;
 
-	submitState:
-		| 'connect'
-		| 'deposit'
-		| 'place-trade'
-		| 'not-enough-margin'
-		| 'enter-size'
-		| 'no-position';
+	isSubmitting: boolean;
+	submitState: string;
+	submitLabel: string;
 	info: {
 		liquidationPrice: string;
 		orderValue: string;
@@ -110,18 +108,34 @@ export function useOrderFormData(): OrderFormData {
 	const priceDecimals = useAtomValue(priceDecimalsAtom);
 	const estLiqPrice = useDeferredValue(useAtomValue(estLiquidationPriceAtom));
 	const slippage = useAtomValue(slippageAtom);
+	const isSubmitting = useAtomValue(isSubmittingAtom);
+	const onboardingBlocker = useAtomValue(onboardingBlockerAtom);
 
 	return useMemo(() => {
 		const sizeNum = safeParseFloat(size);
 
-		const submitState: OrderFormData['submitState'] = (() => {
+		const submitState: string = (() => {
 			if (!isAuthenticated) return 'connect';
-			if (availableMarginRaw <= 0) return 'deposit';
+			// DEX-specific onboarding blocker (deposit, agent, etc.)
+			if (onboardingBlocker) return onboardingBlocker.id;
 			if (reduceOnly && !position) return 'no-position';
 			if (sizeNum <= 0) return 'enter-size';
 			if (!reduceOnly && marginRequiredRaw > availableMarginRaw)
 				return 'not-enough-margin';
 			return 'place-trade';
+		})();
+
+		const isLong = side === 'long';
+		const submitLabel: string = (() => {
+			if (submitState === 'connect') return 'Connect Wallet';
+			if (submitState === 'place-trade')
+				return `${isLong ? 'Buy' : 'Sell'} ${token}`;
+			if (submitState === 'enter-size') return 'Enter Size';
+			if (submitState === 'not-enough-margin') return 'Not Enough Margin';
+			if (submitState === 'no-position') return 'Reduce Only Too Large';
+			// Dynamic label from onboarding step
+			if (onboardingBlocker) return onboardingBlocker.label;
+			return 'Place Trade';
 		})();
 
 		const currentPosition = position
@@ -162,7 +176,9 @@ export function useOrderFormData(): OrderFormData {
 			szDecimals: meta?.szDecimals ?? 2,
 			priceDecimals,
 			isReady: markPriceRaw > 0,
+			isSubmitting,
 			submitState,
+			submitLabel: isSubmitting ? 'Signing...' : submitLabel,
 			info: {
 				liquidationPrice:
 					estLiqPrice > 0
@@ -209,5 +225,7 @@ export function useOrderFormData(): OrderFormData {
 		slLoss,
 		slToggle,
 		slippage,
+		isSubmitting,
+		onboardingBlocker,
 	]);
 }
