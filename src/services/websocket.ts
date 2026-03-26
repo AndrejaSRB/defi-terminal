@@ -84,6 +84,17 @@ class TradingWebSocket {
 		ReturnType<typeof setTimeout>
 	>();
 
+	// Request/response for post actions (order placement, cancel, etc.)
+	private pendingRequests = new Map<
+		number,
+		{
+			resolve: (value: unknown) => void;
+			reject: (reason: Error) => void;
+			timer: ReturnType<typeof setTimeout>;
+		}
+	>();
+	private requestId = 0;
+
 	// Connection state listeners
 	private stateListeners = new Set<StateListener>();
 
@@ -120,6 +131,7 @@ class TradingWebSocket {
 
 	disconnect() {
 		this.clearAllTimers();
+		this.rejectAllPending();
 		this.connectLock = false;
 
 		if (this.ws) {
@@ -156,6 +168,36 @@ class TradingWebSocket {
 			}
 			this.sendQueue.push(message);
 		}
+	}
+
+	/**
+	 * Send an action via WS and wait for the response.
+	 * Used for order placement, cancellation, leverage updates, etc.
+	 * Rejects on timeout (10s) or disconnect.
+	 */
+	postAction(payload: unknown): Promise<unknown> {
+		return new Promise((resolve, reject) => {
+			if (this.ws?.readyState !== WebSocket.OPEN) {
+				reject(new Error('WebSocket not connected'));
+				return;
+			}
+
+			const id = ++this.requestId;
+			const timer = setTimeout(() => {
+				this.pendingRequests.delete(id);
+				reject(new Error('Request timed out'));
+			}, 10_000);
+
+			this.pendingRequests.set(id, { resolve, reject, timer });
+
+			this.ws.send(
+				JSON.stringify({
+					method: 'post',
+					id,
+					request: { type: 'action', payload },
+				}),
+			);
+		});
 	}
 
 	subscribe(descriptor: ChannelDescriptor, callback: Callback): () => void {
@@ -281,6 +323,7 @@ class TradingWebSocket {
 		this.buffers.clear();
 		this.stateListeners.clear();
 		this.sendQueue = [];
+		this.rejectAllPending();
 
 		for (const timer of this.cacheEvictionTimers.values()) {
 			clearTimeout(timer);
@@ -391,6 +434,9 @@ class TradingWebSocket {
 	// ── PRIVATE: Message Handling ────────────────────────────────────
 
 	private handleMessage(message: unknown) {
+		// Handle post action responses (order placement, cancel, etc.)
+		if (this.handlePostResponse(message)) return;
+
 		// Handle pong — measure latency
 		if (this.protocol.isPong(message)) {
 			this.clearPongTimeout();
@@ -432,7 +478,48 @@ class TradingWebSocket {
 		}
 	}
 
+	private handlePostResponse(message: unknown): boolean {
+		const msg = message as Record<string, unknown>;
+		if (msg.channel !== 'post') return false;
+
+		const data = msg.data as
+			| {
+					id?: number;
+					response?: { payload?: { status?: string; response?: unknown } };
+			  }
+			| undefined;
+		if (!data?.id) return false;
+
+		const pending = this.pendingRequests.get(data.id);
+		if (!pending) return false;
+
+		clearTimeout(pending.timer);
+		this.pendingRequests.delete(data.id);
+
+		const payload = data.response?.payload;
+		if (payload?.status === 'ok') {
+			pending.resolve(payload.response);
+		} else {
+			const errorMsg =
+				typeof payload?.response === 'string'
+					? payload.response
+					: 'Request failed';
+			pending.reject(new Error(errorMsg));
+		}
+		return true;
+	}
+
+	private rejectAllPending() {
+		for (const [id, pending] of this.pendingRequests) {
+			clearTimeout(pending.timer);
+			pending.reject(new Error('Connection lost'));
+			this.pendingRequests.delete(id);
+		}
+	}
+
 	private handleClose(event: CloseEvent) {
+		this.rejectAllPending();
+
 		switch (event.code) {
 			case 1000:
 				this.setState('disconnected');
@@ -551,6 +638,7 @@ class TradingWebSocket {
 
 	private handleOffline = () => {
 		this.clearAllTimers();
+		this.rejectAllPending();
 		this.connectLock = false;
 		this.reconnectAttempt = 0;
 		if (this.ws) {

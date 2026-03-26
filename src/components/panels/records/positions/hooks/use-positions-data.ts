@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useAtomValue } from 'jotai';
 import { userPositionsAtom } from '@/atoms/user/positions';
+import { userOpenOrdersAtom } from '@/atoms/user/orders';
 import { pricesAtom } from '@/atoms/prices';
 import { activeNormalizerAtom } from '@/atoms/dex';
 import { parseTokenName } from '@/lib/token';
@@ -24,14 +25,32 @@ export interface FormattedPosition {
 	funding: string;
 	tp: string | null;
 	sl: string | null;
+	rawSize: number;
+	rawEntryPrice: number;
 }
 
 export function usePositionsData() {
 	const positions = useAtomValue(userPositionsAtom);
+	const openOrders = useAtomValue(userOpenOrdersAtom);
 	const prices = useAtomValue(pricesAtom);
 	const normalizer = useAtomValue(activeNormalizerAtom);
 
 	const formatted = useMemo(() => {
+		// Build TP/SL map from trigger orders: coin → { tp, sl }
+		const tpslMap = new Map<string, { tp: number | null; sl: number | null }>();
+		for (const order of openOrders) {
+			if (order.orderType === 'tp_market' || order.orderType === 'tp') {
+				const entry = tpslMap.get(order.coin) ?? { tp: null, sl: null };
+				entry.tp = order.triggerPrice;
+				tpslMap.set(order.coin, entry);
+			}
+			if (order.orderType === 'sl_market' || order.orderType === 'sl') {
+				const entry = tpslMap.get(order.coin) ?? { tp: null, sl: null };
+				entry.sl = order.triggerPrice;
+				tpslMap.set(order.coin, entry);
+			}
+		}
+
 		return positions.map((pos): FormattedPosition => {
 			const { formattedTokenName, dexName } = parseTokenName(pos.coin);
 			const size = safeParseFloat(pos.size);
@@ -68,11 +87,25 @@ export function usePositionsData() {
 					: '--',
 				marginUsed: `$${margin.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
 				funding: `$${Math.abs(funding).toLocaleString('en-US', { maximumFractionDigits: 4 })}`,
-				tp: pos.tp ? normalizer.formatPrice(pos.tp, pos.coin, noDollar) : null,
-				sl: pos.sl ? normalizer.formatPrice(pos.sl, pos.coin, noDollar) : null,
+				tp: tpslMap.get(pos.coin)?.tp
+					? normalizer.formatPrice(
+							tpslMap.get(pos.coin)!.tp!,
+							pos.coin,
+							noDollar,
+						)
+					: null,
+				sl: tpslMap.get(pos.coin)?.sl
+					? normalizer.formatPrice(
+							tpslMap.get(pos.coin)!.sl!,
+							pos.coin,
+							noDollar,
+						)
+					: null,
+				rawSize: size,
+				rawEntryPrice: entry,
 			};
 		});
-	}, [positions, prices, normalizer]);
+	}, [positions, openOrders, prices, normalizer]);
 
 	return { positions: formatted, isEmpty: formatted.length === 0 };
 }

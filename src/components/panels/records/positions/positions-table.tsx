@@ -1,6 +1,8 @@
 import { cn } from '@/lib/utils';
 import { sentimentColor } from '@/lib/colors';
 import { CoinLink } from '../components/coin-link';
+import { PositionActionButtons } from './actions/position-action-buttons';
+import { CloseAllButton } from './actions/close-all-button';
 import type { FormattedPosition } from './hooks/use-positions-data';
 
 const COLUMNS = [
@@ -13,17 +15,28 @@ const COLUMNS = [
 	'Liq Price',
 	'Margin',
 	'Funding',
-	'TP/SL',
 ] as const;
+
+interface PositionsTableProps {
+	positions: FormattedPosition[];
+	isClosing: boolean;
+	onLimitClose: (position: FormattedPosition) => void;
+	onMarketClose: (position: FormattedPosition) => void;
+	onReverse: (position: FormattedPosition) => void;
+	onCloseAll: () => void;
+}
 
 export function PositionsTable({
 	positions,
-}: {
-	positions: FormattedPosition[];
-}) {
+	isClosing,
+	onLimitClose,
+	onMarketClose,
+	onReverse,
+	onCloseAll,
+}: PositionsTableProps) {
 	return (
 		<div className="relative h-full overflow-x-auto no-scrollbar">
-			<table className="w-full min-w-[900px] text-xs">
+			<table className="w-full min-w-[1050px] text-xs">
 				<thead className="sticky top-0 z-10 bg-card">
 					<tr className="border-b border-border">
 						{COLUMNS.map((col) => (
@@ -34,6 +47,16 @@ export function PositionsTable({
 								{col}
 							</th>
 						))}
+						<th className="whitespace-nowrap px-2 py-1.5 text-right font-medium">
+							<CloseAllButton
+								hasPositions={positions.length > 0}
+								disabled={isClosing}
+								onClick={onCloseAll}
+							/>
+						</th>
+						<th className="whitespace-nowrap px-2 py-1.5 text-left font-medium text-muted-foreground">
+							TP/SL
+						</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -95,6 +118,15 @@ export function PositionsTable({
 								</td>
 								<td className="whitespace-nowrap px-2 py-1.5">
 									{position.funding}
+								</td>
+								<td className="whitespace-nowrap px-2 py-1.5">
+									<PositionActionButtons
+										position={position}
+										onLimitClose={onLimitClose}
+										onMarketClose={onMarketClose}
+										onReverse={onReverse}
+										disabled={isClosing}
+									/>
 								</td>
 								<td className="whitespace-nowrap px-2 py-1.5">
 									{position.tp ?? '--'} / {position.sl ?? '--'}

@@ -35,6 +35,7 @@ import {
 	parseUserFundings,
 	parseUserTradingContext,
 } from './utils/parser';
+import { setUniverseOrder } from '@/services/hyperliquid/order-builder';
 
 // ── HL-specific channel descriptor ──────────────────────────────────
 type HLChannelDescriptor =
@@ -203,6 +204,9 @@ export const hyperliquidNormalizer: DexNormalizer = {
 			}
 			universeOrder.push(coins);
 		}
+
+		// Share universe order with order builder for asset index lookups
+		setUniverseOrder(universeOrder);
 
 		return assetMetaMap;
 	},

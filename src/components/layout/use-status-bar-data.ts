@@ -42,7 +42,7 @@ export function useStatusBarData() {
 		}
 
 		const fmt = (v: number) =>
-			`$${Math.abs(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+			`$${Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 		return {
 			connectionStatus: statusMap[connectionState],

@@ -2,13 +2,15 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useAtomValue, useSetAtom, useStore } from 'jotai';
 import { toast } from 'sonner';
 import { activeTokenAtom } from '@/atoms/active-token';
-import { activeDexOnboardingAtom } from '@/atoms/dex';
+import { activeDexOnboardingAtom, activeDexExchangeAtom } from '@/atoms/dex';
 import {
 	onboardingBlockerAtom,
 	onboardingVersionAtom,
 	walletAddressAtom,
 } from '@/atoms/user/onboarding';
 import { useWalletSigner } from '@/hooks/use-wallet-signer';
+import { tradingWs } from '@/services/ws';
+import { setActiveWalletAddress } from '@/normalizer/hyperliquid/exchange';
 import { safeParseFloat } from '@/lib/numbers';
 import {
 	orderSideAtom,
@@ -31,6 +33,7 @@ import {
 	slSourceAtom,
 	resetMarginOverridesAtom,
 	isSubmittingAtom,
+	slippageAtom,
 } from '../atoms/order-form-atoms';
 import {
 	availableToTradeAtom,
@@ -357,6 +360,10 @@ export function useOrderFormActions(): OrderFormActions {
 		if (denom === 'usd' && price > 0) {
 			sizeInCoin = sizeInCoin / price;
 		}
+		// Round to szDecimals — prevents "Size precision exceeds N decimals"
+		const szDec = meta?.szDecimals ?? 2;
+		const szMultiplier = 10 ** szDec;
+		sizeInCoin = Math.round(sizeInCoin * szMultiplier) / szMultiplier;
 
 		const values: OrderFormValues = {
 			side,
@@ -383,8 +390,51 @@ export function useOrderFormActions(): OrderFormActions {
 			return;
 		}
 
-		// Static form — no actual placement yet
-		toast.success('Order form is valid');
+		// Place order via DEX exchange adapter
+		store.set(isSubmittingAtom, true);
+		try {
+			const address = store.get(walletAddressAtom) ?? '';
+			setActiveWalletAddress(address);
+
+			const exchange = store.get(activeDexExchangeAtom);
+			const token = store.get(activeTokenAtom);
+			const slippageVal = store.get(slippageAtom);
+
+			const orderResult = await exchange.placeOrder(
+				{
+					coin: token,
+					side: side === 'long' ? 'buy' : 'sell',
+					type,
+					price:
+						type === 'market'
+							? mark
+							: safeParseFloat(store.get(limitPriceAtom)),
+					size: sizeInCoin,
+					reduceOnly,
+					slippage: slippageVal,
+					tif: type === 'market' ? 'Ioc' : 'Gtc',
+					tp: tpslEnabled
+						? safeParseFloat(store.get(tpPriceAtom)) || undefined
+						: undefined,
+					sl: tpslEnabled
+						? safeParseFloat(store.get(slPriceAtom)) || undefined
+						: undefined,
+				},
+				tradingWs,
+			);
+
+			if (orderResult.status === 'success') {
+				toast.success(orderResult.message ?? 'Order placed');
+			} else {
+				toast.error(orderResult.message ?? 'Order failed');
+			}
+		} catch (error) {
+			const msg =
+				error instanceof Error ? error.message : 'Order placement failed';
+			toast.error(msg);
+		} finally {
+			store.set(isSubmittingAtom, false);
+		}
 	}, [store, sign]);
 
 	return {

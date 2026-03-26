@@ -1,9 +1,24 @@
 import { cn } from '@/lib/utils';
 import { sentimentColor } from '@/lib/colors';
 import { CoinLink } from '../components/coin-link';
+import { PositionActionButtons } from './actions/position-action-buttons';
 import type { FormattedPosition } from './hooks/use-positions-data';
 
-export function PositionCard({ position }: { position: FormattedPosition }) {
+interface PositionCardProps {
+	position: FormattedPosition;
+	isClosing: boolean;
+	onLimitClose: (position: FormattedPosition) => void;
+	onMarketClose: (position: FormattedPosition) => void;
+	onReverse: (position: FormattedPosition) => void;
+}
+
+export function PositionCard({
+	position,
+	isClosing,
+	onLimitClose,
+	onMarketClose,
+	onReverse,
+}: PositionCardProps) {
 	const isLong = position.side === 'LONG';
 	const badgeColor = isLong
 		? 'text-green-400 bg-green-400/10'
@@ -63,6 +78,16 @@ export function PositionCard({ position }: { position: FormattedPosition }) {
 						</div>
 					</div>
 				)}
+			</div>
+
+			<div className="mt-2 border-t border-border pt-2">
+				<PositionActionButtons
+					position={position}
+					onLimitClose={onLimitClose}
+					onMarketClose={onMarketClose}
+					onReverse={onReverse}
+					disabled={isClosing}
+				/>
 			</div>
 		</div>
 	);

@@ -56,7 +56,9 @@ export function formatSize(value: number, szDecimals: number): string {
 	if (!Number.isFinite(value)) return '--';
 
 	const multiplier = 10 ** szDecimals;
-	const truncated = Math.trunc(value * multiplier) / multiplier;
+	// Round instead of trunc to avoid floating point precision loss
+	// e.g., 0.00015 * 100000 = 14.999... → Math.round = 15
+	const rounded = Math.round(value * multiplier) / multiplier;
 
-	return truncated.toFixed(szDecimals);
+	return rounded.toFixed(szDecimals);
 }
