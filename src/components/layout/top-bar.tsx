@@ -9,6 +9,7 @@ import {
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/use-auth';
+import { SettingsDialog } from './settings/settings-dialog';
 
 export function TopBar() {
 	const {
@@ -34,6 +35,7 @@ export function TopBar() {
 			</div>
 
 			<div className="flex items-center gap-2">
+				<SettingsDialog />
 				{!isReady ? (
 					<Button size="sm" disabled>
 						Loading...

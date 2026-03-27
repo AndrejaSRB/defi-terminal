@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
+import { useAtomValue } from 'jotai';
 import { tradingWs } from '@/services/ws';
+import { themeAtom } from '@/atoms/settings';
 import { useChartData } from './hooks/use-chart-data';
 import { createDatafeed } from './datafeed';
-import { ChartSkeleton } from './chart-skeleton';
 import { LocalStorageSaveLoadAdapter } from './chart-storage';
 import {
-	CHART_OVERRIDES,
+	getChartOverrides,
+	getToolbarBg,
+	getLoadingScreen,
+	applyWidgetTheme,
 	STUDIES_OVERRIDES,
 	DISABLED_FEATURES,
 	ENABLED_FEATURES,
-	LOADING_SCREEN,
 } from './chart-overrides';
 import type { DatafeedWithDispose } from './datafeed';
 import type { IChartingLibraryWidget } from '@charting_library/charting_library';
@@ -51,8 +54,9 @@ export default function TradingViewChart() {
 	const [retryCount, setRetryCount] = useState(0);
 
 	const { token, normalizer, assetMetaReady, getPrice } = useChartData();
+	const themeId = useAtomValue(themeAtom);
 
-	// Widget init — depends on normalizer (not token, symbol switching is separate)
+	// Widget init
 	useEffect(() => {
 		if (!assetMetaReady) return;
 
@@ -61,9 +65,13 @@ export default function TradingViewChart() {
 		async function init() {
 			try {
 				await loadTradingViewScript();
-			} catch (e) {
+			} catch (initError) {
 				if (!disposed) {
-					setError(e instanceof Error ? e.message : 'Failed to load chart');
+					setError(
+						initError instanceof Error
+							? initError.message
+							: 'Failed to load chart',
+					);
 				}
 				return;
 			}
@@ -90,12 +98,12 @@ export default function TradingViewChart() {
 				fullscreen: false,
 				autosize: true,
 				timezone: 'Etc/UTC',
+				toolbar_bg: getToolbarBg(),
 				disabled_features: DISABLED_FEATURES,
 				enabled_features: ENABLED_FEATURES,
-				overrides: CHART_OVERRIDES,
+				overrides: getChartOverrides(),
 				studies_overrides: STUDIES_OVERRIDES,
-				loading_screen: LOADING_SCREEN,
-				custom_css_url: '/charting_library/css/style.css',
+				loading_screen: getLoadingScreen(),
 				time_scale: { min_bar_spacing: 4 },
 				save_load_adapter: saveLoadAdapter,
 				auto_save_delay: 2,
@@ -105,14 +113,18 @@ export default function TradingViewChart() {
 			widgetRef.current = widget;
 
 			widget.onChartReady(() => {
-				if (!disposed) setIsReady(true);
+				if (disposed) return;
+				if (containerRef.current) {
+					applyWidgetTheme(widget, containerRef.current);
+				}
+				setIsReady(true);
 			});
 		}
 
 		const unsubState = tradingWs.onStateChange((state) => {
 			if (state === 'connected' && datafeedRef.current) {
-				datafeedRef.current.fillGap().catch((e) => {
-					console.error('[Chart] Gap fill failed:', e);
+				datafeedRef.current.fillGap().catch((gapError) => {
+					console.error('[Chart] Gap fill failed:', gapError);
 				});
 			}
 		});
@@ -135,7 +147,23 @@ export default function TradingViewChart() {
 		};
 	}, [normalizer, assetMetaReady, retryCount, getPrice, token]);
 
-	// Symbol switch — TradingView handles unsubscribe/resubscribe internally via setSymbol
+	// Live theme sync — apply color overrides to running widget without recreation
+	useEffect(() => {
+		if (!isReady || !widgetRef.current || !containerRef.current) return;
+		const widget = widgetRef.current;
+		const container = containerRef.current;
+		// Small delay to let CSS variables settle after theme application
+		const timer = setTimeout(() => {
+			try {
+				applyWidgetTheme(widget, container);
+			} catch (overrideError) {
+				console.warn('[Chart] Failed to apply theme overrides:', overrideError);
+			}
+		}, 50);
+		return () => clearTimeout(timer);
+	}, [themeId, isReady]);
+
+	// Symbol switch
 	useEffect(() => {
 		if (!isReady || !widgetRef.current) return;
 		const chart = widgetRef.current.activeChart();
@@ -162,14 +190,5 @@ export default function TradingViewChart() {
 		);
 	}
 
-	return (
-		<div className="relative h-full w-full">
-			{!isReady && (
-				<div className="absolute inset-0 z-10">
-					<ChartSkeleton />
-				</div>
-			)}
-			<div ref={containerRef} className="h-full w-full" />
-		</div>
-	);
+	return <div ref={containerRef} className="h-full w-full" />;
 }
