@@ -1,10 +1,11 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'jotai';
+import { RouterProvider } from '@tanstack/react-router';
 import { Toaster } from 'sonner';
 import { PrivyProvider } from '@/providers/privy-provider';
 import { DexProvider } from '@/providers/dex-provider';
-import App from './App.tsx';
+import { router } from './routes';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
@@ -12,7 +13,7 @@ createRoot(document.getElementById('root')!).render(
 		<PrivyProvider>
 			<Provider>
 				<DexProvider>
-					<App />
+					<RouterProvider router={router} />
 					<Toaster
 						theme="dark"
 						position="bottom-right"

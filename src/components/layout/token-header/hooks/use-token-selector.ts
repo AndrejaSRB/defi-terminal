@@ -1,20 +1,19 @@
 import { useCallback, useState } from 'react';
-import { useSetAtom } from 'jotai';
-import { activeTokenAtom } from '@/atoms/active-token';
+import { useNavigateToken } from '@/hooks/use-navigate-token';
 
 export function useTokenSelector() {
 	const [isOpen, setIsOpen] = useState(false);
-	const setActiveToken = useSetAtom(activeTokenAtom);
+	const navigateToToken = useNavigateToken();
 
 	const open = useCallback(() => setIsOpen(true), []);
 	const close = useCallback(() => setIsOpen(false), []);
 	const toggle = useCallback(() => setIsOpen((prev) => !prev), []);
 	const selectToken = useCallback(
 		(symbol: string) => {
-			setActiveToken(symbol);
+			navigateToToken(symbol);
 			setIsOpen(false);
 		},
-		[setActiveToken],
+		[navigateToToken],
 	);
 
 	return { isOpen, open, close, toggle, selectToken };

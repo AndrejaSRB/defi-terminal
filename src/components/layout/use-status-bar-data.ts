@@ -44,12 +44,16 @@ export function useStatusBarData() {
 		const fmt = (v: number) =>
 			`$${Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+		const delta = totalLongs - totalShorts;
+
 		return {
 			connectionStatus: statusMap[connectionState],
 			dexName: normalizer.name,
 			totalOpen: fmt(totalOpen),
 			totalLongs: fmt(totalLongs),
 			totalShorts: fmt(totalShorts),
+			delta: `${delta >= 0 ? '+' : '-'}${fmt(delta)}`,
+			deltaValue: delta,
 			totalPnl: `${totalPnl >= 0 ? '+' : '-'}${fmt(totalPnl)}`,
 			totalPnlValue: totalPnl,
 			orderCount: orders.length,

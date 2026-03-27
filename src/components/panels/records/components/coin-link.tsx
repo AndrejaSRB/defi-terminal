@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
-import { useSetAtom } from 'jotai';
-import { activeTokenAtom } from '@/atoms/active-token';
+import { useNavigateToken } from '@/hooks/use-navigate-token';
 
 interface CoinLinkProps {
 	coin: string;
@@ -9,11 +8,11 @@ interface CoinLinkProps {
 }
 
 export function CoinLink({ coin, displayName, dexName }: CoinLinkProps) {
-	const setActiveToken = useSetAtom(activeTokenAtom);
+	const navigateToToken = useNavigateToken();
 
 	const handleClick = useCallback(() => {
-		setActiveToken(coin);
-	}, [coin, setActiveToken]);
+		navigateToToken(coin);
+	}, [coin, navigateToToken]);
 
 	return (
 		<>

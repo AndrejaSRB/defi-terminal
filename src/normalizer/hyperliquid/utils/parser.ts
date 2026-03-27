@@ -187,17 +187,20 @@ export function parseUserBalances(raw: unknown): {
 
 	let totalAccountValue = 0;
 	let totalMarginUsed = 0;
+	let totalMaintenanceMargin = 0;
 	let totalWithdrawable = 0;
 	let totalRawUsd = 0;
 
 	for (const [dex, state] of data.clearinghouseStates) {
 		const av = parseFloat(state.marginSummary.accountValue);
 		const mu = parseFloat(state.marginSummary.totalMarginUsed);
+		const mm = parseFloat(state.crossMaintenanceMarginUsed) || 0;
 		const wd = parseFloat(state.withdrawable);
 		const raw = parseFloat(state.marginSummary.totalRawUsd) || 0;
 
 		totalAccountValue += av;
 		totalMarginUsed += mu;
+		totalMaintenanceMargin += mm;
 		totalWithdrawable += wd;
 		totalRawUsd += raw;
 
@@ -219,6 +222,7 @@ export function parseUserBalances(raw: unknown): {
 		margin: {
 			accountValue: totalAccountValue.toFixed(2),
 			totalMarginUsed: totalMarginUsed.toFixed(2),
+			crossMaintenanceMarginUsed: totalMaintenanceMargin.toFixed(2),
 			withdrawable: totalWithdrawable.toFixed(2),
 			totalRawUsd: totalRawUsd.toFixed(2),
 		},

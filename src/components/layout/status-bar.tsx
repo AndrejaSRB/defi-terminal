@@ -15,6 +15,8 @@ export function StatusBar() {
 		totalOpen,
 		totalLongs,
 		totalShorts,
+		delta,
+		deltaValue,
 		totalPnl,
 		totalPnlValue,
 		orderCount,
@@ -26,6 +28,9 @@ export function StatusBar() {
 				<span className="hidden lg:inline">Open: {totalOpen}</span>
 				<span className="hidden lg:inline">Longs: {totalLongs}</span>
 				<span className="hidden lg:inline">Shorts: {totalShorts}</span>
+				<span className={cn('hidden lg:inline', sentimentColor(deltaValue))}>
+					Delta: {delta}
+				</span>
 				<span className={cn('hidden lg:inline', sentimentColor(totalPnlValue))}>
 					UPnL: {totalPnl}
 				</span>

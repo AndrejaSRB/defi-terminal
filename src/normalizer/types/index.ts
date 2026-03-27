@@ -158,6 +158,7 @@ export interface UserBalance {
 export interface MarginSummary {
 	accountValue: string;
 	totalMarginUsed: string;
+	crossMaintenanceMarginUsed: string;
 	withdrawable: string;
 	totalRawUsd: string;
 }
