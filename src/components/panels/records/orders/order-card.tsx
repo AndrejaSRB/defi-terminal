@@ -1,13 +1,15 @@
 import { cn } from '@/lib/utils';
+import { directionColor } from '@/lib/colors';
 import { CoinLink } from '../components/coin-link';
 import type { FormattedOrder } from './hooks/use-orders-data';
 
-export function OrderCard({ order }: { order: FormattedOrder }) {
-	const sideColor =
-		order.side === 'buy'
-			? 'text-green-400 bg-green-400/10'
-			: 'text-red-400 bg-red-400/10';
+interface OrderCardProps {
+	order: FormattedOrder;
+	isProcessing: boolean;
+	onCancel: (orderId: number, coin: string) => void;
+}
 
+export function OrderCard({ order, isProcessing, onCancel }: OrderCardProps) {
 	return (
 		<div className="rounded-md border border-border bg-card p-3 text-xs">
 			<div className="flex items-center justify-between">
@@ -19,17 +21,21 @@ export function OrderCard({ order }: { order: FormattedOrder }) {
 					/>
 					<span
 						className={cn(
-							'rounded px-1 py-px text-[10px] font-medium uppercase',
-							sideColor,
+							'text-[11px]',
+							directionColor(
+								order.direction === 'Long' || order.direction === 'Close Short'
+									? 'Open Long'
+									: 'Open Short',
+							),
 						)}
 					>
-						{order.side}
+						{order.direction}
 					</span>
 					<span className="rounded bg-muted px-1 py-px text-[10px]">
-						{order.orderType}
+						{order.type}
 					</span>
 				</div>
-				<span className="text-muted-foreground">{order.timestamp}</span>
+				<span className="text-muted-foreground">{order.time}</span>
 			</div>
 
 			<div className="mt-2 grid grid-cols-2 gap-y-1.5 text-muted-foreground">
@@ -42,15 +48,30 @@ export function OrderCard({ order }: { order: FormattedOrder }) {
 					<div className="text-foreground">{order.size}</div>
 				</div>
 				<div>
-					<span>Filled</span>
-					<div className="text-foreground">{order.filled}</div>
+					<span>Order Value</span>
+					<div className="text-foreground">{order.orderValue}</div>
 				</div>
-				{order.triggerPrice && (
-					<div className="text-right">
+				<div className="text-right">
+					<span>Reduce Only</span>
+					<div className="text-foreground">{order.reduceOnly}</div>
+				</div>
+				{order.triggerCondition !== 'N/A' && (
+					<div className="col-span-2">
 						<span>Trigger</span>
-						<div className="text-foreground">{order.triggerPrice}</div>
+						<div className="text-foreground">{order.triggerCondition}</div>
 					</div>
 				)}
+			</div>
+
+			<div className="mt-2 border-t border-border pt-2">
+				<button
+					type="button"
+					disabled={isProcessing}
+					onClick={() => onCancel(order.rawOrderId, order.coin)}
+					className="text-primary transition-colors hover:text-primary/80 disabled:opacity-50"
+				>
+					Cancel
+				</button>
 			</div>
 		</div>
 	);

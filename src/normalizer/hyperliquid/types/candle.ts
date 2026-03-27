@@ -3,11 +3,11 @@ export interface HlCandle {
 	T: number;
 	s: string;
 	i: string;
-	o: number;
-	c: number;
-	h: number;
-	l: number;
-	v: number;
+	o: string;
+	c: string;
+	h: string;
+	l: string;
+	v: string;
 	n: number;
 }
 

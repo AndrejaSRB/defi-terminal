@@ -133,6 +133,9 @@ export function parseUserOpenOrders(raw: unknown): OpenOrder[] {
 			sl: slChild ? parseFloat(slChild.triggerPx) : null,
 			status: 'open',
 			timestamp: o.timestamp,
+			isPositionTpsl: o.isPositionTpsl ?? false,
+			tif: o.tif ?? null,
+			cloid: o.cloid ?? null,
 		};
 	});
 }
@@ -149,11 +152,11 @@ export function parseCandle(raw: unknown): Candle {
 function parseSingleCandle(c: HlCandle): Candle {
 	return {
 		time: c.t,
-		open: c.o,
-		high: c.h,
-		low: c.l,
-		close: c.c,
-		volume: c.v,
+		open: parseFloat(c.o),
+		high: parseFloat(c.h),
+		low: parseFloat(c.l),
+		close: parseFloat(c.c),
+		volume: parseFloat(c.v),
 	};
 }
 

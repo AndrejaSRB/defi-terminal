@@ -70,6 +70,9 @@ export interface OpenOrder {
 	sl: number | null;
 	status: 'open' | 'partial' | 'filled' | 'cancelled';
 	timestamp: number;
+	isPositionTpsl: boolean;
+	tif: string | null;
+	cloid: string | null;
 }
 
 // ── Prices ───────────────────────────────────────────────────────────
