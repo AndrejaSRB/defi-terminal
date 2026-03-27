@@ -10,10 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { NumberInput } from '@/components/ui/number-input';
-import { Slider } from '@/components/ui/slider';
 import { slippageAtom } from '../atoms/order-form-atoms';
-
-const MAX_SLIPPAGE = 8;
 
 interface SlippageDialogProps {
 	open: boolean;
@@ -27,34 +24,25 @@ export const SlippageDialog = memo(function SlippageDialog({
 	const currentSlippage = useAtomValue(slippageAtom);
 	const setSlippage = useSetAtom(slippageAtom);
 
-	const [localValue, setLocalValue] = useState(currentSlippage);
 	const [inputValue, setInputValue] = useState(currentSlippage.toString());
 
 	useEffect(() => {
 		if (open) {
-			setLocalValue(currentSlippage);
 			setInputValue(currentSlippage.toString());
 		}
 	}, [open, currentSlippage]);
 
-	const handleSliderChange = useCallback((values: number[]) => {
-		const num = values[0];
-		setLocalValue(num);
-		setInputValue(num.toFixed(1));
-	}, []);
-
 	const handleInputChange = useCallback((raw: string) => {
 		setInputValue(raw);
-		const num = Number(raw);
-		if (num >= 0 && num <= MAX_SLIPPAGE) {
-			setLocalValue(num);
-		}
 	}, []);
 
 	const handleConfirm = useCallback(() => {
-		setSlippage(localValue);
+		const num = Number(inputValue);
+		if (num >= 0 && num <= 100) {
+			setSlippage(num);
+		}
 		onOpenChange(false);
-	}, [localValue, setSlippage, onOpenChange]);
+	}, [inputValue, setSlippage, onOpenChange]);
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -62,29 +50,18 @@ export const SlippageDialog = memo(function SlippageDialog({
 				<DialogHeader>
 					<DialogTitle>Max Slippage</DialogTitle>
 					<DialogDescription>
-						Set the maximum slippage tolerance for market orders.
+						Max slippage only affects market orders placed from the order form.
+						Closing positions will use max slippage of 8% and market TP/SL
+						orders will use max slippage of 10%.
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="flex items-center gap-3">
-					<Slider
-						min={0}
-						max={MAX_SLIPPAGE}
-						step={0.1}
-						value={[localValue]}
-						onValueChange={handleSliderChange}
-						className="flex-1"
-					/>
-					<NumberInput
-						value={inputValue}
-						onValueChange={handleInputChange}
-						suffix="%"
-						maxDecimals={1}
-						className="w-20"
-					/>
-				</div>
-
-				<p className="text-xs text-muted-foreground">Max: {MAX_SLIPPAGE}%</p>
+				<NumberInput
+					value={inputValue}
+					onValueChange={handleInputChange}
+					suffix="%"
+					maxDecimals={2}
+				/>
 
 				<DialogFooter>
 					<Button className="w-full" onClick={handleConfirm}>

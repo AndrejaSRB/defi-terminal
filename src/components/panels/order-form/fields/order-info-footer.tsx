@@ -33,14 +33,14 @@ export const OrderInfoFooter = memo(function OrderInfoFooter({
 				<span className="text-foreground">{info.marginRequired}</span>
 			</div>
 			<div className="flex justify-between">
+				<span className="text-muted-foreground">Slippage</span>
 				<button
 					type="button"
 					onClick={handleSlippageClick}
-					className="cursor-pointer text-muted-foreground underline decoration-dashed underline-offset-2 transition-colors hover:text-foreground"
+					className="cursor-pointer text-foreground underline decoration-dashed underline-offset-2 transition-colors hover:text-primary"
 				>
-					Slippage
+					Max: {info.slippage}
 				</button>
-				<span className="text-foreground">Max: {info.slippage}</span>
 			</div>
 			<div className="flex justify-between">
 				<span
