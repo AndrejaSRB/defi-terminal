@@ -1,8 +1,16 @@
 import { memo, useState, useCallback, useEffect } from 'react';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom, useStore } from 'jotai';
+import { toast } from 'sonner';
 import { activeTokenAtom } from '@/atoms/active-token';
+import { activeDexExchangeAtom } from '@/atoms/dex';
+import {
+	walletAddressAtom,
+	onboardingBlockerAtom,
+} from '@/atoms/user/onboarding';
+import { tradingWs } from '@/services/ws';
+import { setActiveWalletAddress } from '@/normalizer/hyperliquid/exchange';
 import { activeMetaAtom } from '../atoms/order-form-derived';
-import { leverageAtom } from '../atoms/order-form-atoms';
+import { leverageAtom, marginModeAtom } from '../atoms/order-form-atoms';
 import {
 	Dialog,
 	DialogContent,
@@ -58,10 +66,39 @@ export const LeverageDialog = memo(function LeverageDialog({
 		[maxLeverage],
 	);
 
-	const handleConfirm = useCallback(() => {
+	const store = useStore();
+	const [isConfirming, setIsConfirming] = useState(false);
+
+	const handleConfirm = useCallback(async () => {
+		const blocker = store.get(onboardingBlockerAtom);
+		if (!blocker) {
+			setIsConfirming(true);
+			const address = store.get(walletAddressAtom) ?? '';
+			setActiveWalletAddress(address);
+			const mode = store.get(marginModeAtom);
+			try {
+				const exchange = store.get(activeDexExchangeAtom);
+				await exchange.updateLeverage(
+					{
+						coin: token,
+						leverage: localValue,
+						isCross: mode === 'cross',
+					},
+					tradingWs,
+				);
+				toast.success(`Leverage updated to ${localValue}x`);
+			} catch (error) {
+				toast.error(
+					error instanceof Error ? error.message : 'Update leverage failed',
+				);
+				setIsConfirming(false);
+				return;
+			}
+			setIsConfirming(false);
+		}
 		setLeverage(localValue);
 		onOpenChange(false);
-	}, [localValue, setLeverage, onOpenChange]);
+	}, [localValue, setLeverage, onOpenChange, store, token]);
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -98,8 +135,12 @@ export const LeverageDialog = memo(function LeverageDialog({
 				</div>
 
 				<DialogFooter>
-					<Button className="w-full" onClick={handleConfirm}>
-						Establish Connection
+					<Button
+						className="w-full"
+						disabled={isConfirming}
+						onClick={handleConfirm}
+					>
+						{isConfirming ? 'Updating...' : 'Confirm'}
 					</Button>
 					<div className="rounded-lg border border-primary/30 bg-primary/10 px-4 py-2.5 text-center text-xs text-primary">
 						Note that setting a higher leverage increases the risk of

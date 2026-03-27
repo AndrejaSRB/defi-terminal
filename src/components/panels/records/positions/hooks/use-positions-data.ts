@@ -25,8 +25,20 @@ export interface FormattedPosition {
 	funding: string;
 	tp: string | null;
 	sl: string | null;
+	tpOrderId: number | null;
+	slOrderId: number | null;
 	rawSize: number;
 	rawEntryPrice: number;
+	rawMarkPrice: number;
+	rawTpPrice: number | null;
+	rawSlPrice: number | null;
+}
+
+interface TpslEntry {
+	tp: number | null;
+	tpOrderId: number | null;
+	sl: number | null;
+	slOrderId: number | null;
 }
 
 export function usePositionsData() {
@@ -36,17 +48,29 @@ export function usePositionsData() {
 	const normalizer = useAtomValue(activeNormalizerAtom);
 
 	const formatted = useMemo(() => {
-		// Build TP/SL map from trigger orders: coin → { tp, sl }
-		const tpslMap = new Map<string, { tp: number | null; sl: number | null }>();
+		// Build TP/SL map with order IDs for cancel support
+		const tpslMap = new Map<string, TpslEntry>();
 		for (const order of openOrders) {
 			if (order.orderType === 'tp_market' || order.orderType === 'tp') {
-				const entry = tpslMap.get(order.coin) ?? { tp: null, sl: null };
+				const entry = tpslMap.get(order.coin) ?? {
+					tp: null,
+					tpOrderId: null,
+					sl: null,
+					slOrderId: null,
+				};
 				entry.tp = order.triggerPrice;
+				entry.tpOrderId = Number(order.id);
 				tpslMap.set(order.coin, entry);
 			}
 			if (order.orderType === 'sl_market' || order.orderType === 'sl') {
-				const entry = tpslMap.get(order.coin) ?? { tp: null, sl: null };
+				const entry = tpslMap.get(order.coin) ?? {
+					tp: null,
+					tpOrderId: null,
+					sl: null,
+					slOrderId: null,
+				};
 				entry.sl = order.triggerPrice;
+				entry.slOrderId = Number(order.id);
 				tpslMap.set(order.coin, entry);
 			}
 		}
@@ -58,6 +82,7 @@ export function usePositionsData() {
 			const mark = safeParseFloat(prices[pos.coin], entry);
 			const margin = safeParseFloat(pos.marginUsed);
 			const funding = safeParseFloat(pos.funding);
+			const tpsl = tpslMap.get(pos.coin);
 
 			const direction = pos.side === 'LONG' ? 1 : -1;
 			const pnlValue = (mark - entry) * size * direction;
@@ -76,7 +101,7 @@ export function usePositionsData() {
 				positionValue: `$${posValue.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
 				entryPrice: normalizer.formatPrice(entry, pos.coin),
 				markPrice: normalizer.formatPrice(mark, pos.coin),
-				pnl: `${pnlValue >= 0 ? '+' : ''}$${Math.abs(pnlValue).toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
+				pnl: `${pnlValue >= 0 ? '+' : ''}$${Math.abs(pnlValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
 				pnlValue,
 				roi: `${roiValue >= 0 ? '+' : ''}${roiValue.toFixed(2)}%`,
 				liquidationPrice: pos.liquidationPrice
@@ -87,22 +112,19 @@ export function usePositionsData() {
 					: '--',
 				marginUsed: `$${margin.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
 				funding: `$${Math.abs(funding).toLocaleString('en-US', { maximumFractionDigits: 4 })}`,
-				tp: tpslMap.get(pos.coin)?.tp
-					? normalizer.formatPrice(
-							tpslMap.get(pos.coin)!.tp!,
-							pos.coin,
-							noDollar,
-						)
+				tp: tpsl?.tp
+					? normalizer.formatPrice(tpsl.tp, pos.coin, noDollar)
 					: null,
-				sl: tpslMap.get(pos.coin)?.sl
-					? normalizer.formatPrice(
-							tpslMap.get(pos.coin)!.sl!,
-							pos.coin,
-							noDollar,
-						)
+				sl: tpsl?.sl
+					? normalizer.formatPrice(tpsl.sl, pos.coin, noDollar)
 					: null,
+				tpOrderId: tpsl?.tpOrderId ?? null,
+				slOrderId: tpsl?.slOrderId ?? null,
 				rawSize: size,
 				rawEntryPrice: entry,
+				rawMarkPrice: mark,
+				rawTpPrice: tpsl?.tp ?? null,
+				rawSlPrice: tpsl?.sl ?? null,
 			};
 		});
 	}, [positions, openOrders, prices, normalizer]);

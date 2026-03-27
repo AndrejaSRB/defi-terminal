@@ -1,4 +1,4 @@
-import { encode } from '@msgpack/msgpack';
+import { encode, type EncoderOptions } from '@msgpack/msgpack';
 import { keccak256 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import type {
@@ -6,8 +6,39 @@ import type {
 	CancelOrderParams,
 	ModifyOrderParams,
 	UpdateLeverageParams,
+	SetPositionTpSlParams,
 } from '@/normalizer/exchange';
 import { splitSignature } from './agent';
+import { getSzDecimals } from '@/normalizer/hyperliquid/hyperliquid';
+import { truncatePrice } from '@/normalizer/hyperliquid/utils/format';
+
+// ── Exchange Formatting ─────────────────────────────────────────────
+// All prices/sizes MUST go through these before hitting the wire.
+
+export function formatPriceForExchange(
+	price: number,
+	coin: string,
+	side: 'buy' | 'sell',
+	isMarket: boolean,
+	slippage = 0,
+): number {
+	const szDecimals = getSzDecimals(coin);
+	let adjusted = price;
+	if (isMarket && slippage > 0) {
+		// Slippage-adjusted worst-case price for market orders
+		adjusted =
+			side === 'buy'
+				? price * (1 + slippage / 100)
+				: price * (1 - slippage / 100);
+	}
+	return truncatePrice(adjusted, szDecimals);
+}
+
+export function formatSizeForExchange(size: number, coin: string): number {
+	const szDecimals = getSzDecimals(coin);
+	const multiplier = 10 ** szDecimals;
+	return Math.round(size * multiplier) / multiplier;
+}
 
 // ── Asset Index ─────────────────────────────────────────────────────
 
@@ -83,8 +114,9 @@ function actionHash(
 	vaultAddress: string | null,
 	expiresAfter: number | null,
 ): `0x${string}` {
-	// 1. Clean + msgpack serialize the action
-	const msgpackBytes = encode(cleanAction(action));
+	// 1. Clean + msgpack serialize the action (useBigInt64 for BigInt support)
+	const msgpackOpts: EncoderOptions = { useBigInt64: true };
+	const msgpackBytes = encode(cleanAction(action), msgpackOpts);
 
 	// 2. Nonce as 8-byte big-endian
 	const nonceBytes = new Uint8Array(8);
@@ -266,6 +298,56 @@ export function buildModifyAction(params: ModifyOrderParams) {
 			t: { limit: { tif: (params.tif ?? 'Gtc') as string } },
 		},
 	};
+}
+
+// ── Position TP/SL Action Builder ───────────────────────────────────
+
+export function buildPositionTpslAction(params: SetPositionTpSlParams) {
+	const assetIndex = getAssetIndex(params.coin);
+	// Close side is opposite of position side
+	const isBuy = params.side === 'SHORT';
+	const orders: unknown[] = [];
+
+	if (params.tp) {
+		orders.push({
+			a: assetIndex,
+			b: isBuy,
+			// p = slippage-adjusted execution price (far from trigger to ensure fill)
+			p: isBuy
+				? Math.round(params.tp * 1.1).toString()
+				: Math.round(params.tp * 0.9).toString(),
+			s: '0', // "0" = entire position (dynamic)
+			r: true,
+			t: {
+				trigger: {
+					isMarket: true,
+					triggerPx: params.tp.toString(),
+					tpsl: 'tp',
+				},
+			},
+		});
+	}
+
+	if (params.sl) {
+		orders.push({
+			a: assetIndex,
+			b: isBuy,
+			p: isBuy
+				? Math.round(params.sl * 1.1).toString()
+				: Math.round(params.sl * 0.9).toString(),
+			s: '0',
+			r: true,
+			t: {
+				trigger: {
+					isMarket: true,
+					triggerPx: params.sl.toString(),
+					tpsl: 'sl',
+				},
+			},
+		});
+	}
+
+	return { type: 'order' as const, orders, grouping: 'positionTpsl' as const };
 }
 
 // ── UpdateLeverage Action Builder ───────────────────────────────────

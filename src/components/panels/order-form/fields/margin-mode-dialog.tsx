@@ -1,6 +1,14 @@
-import { memo, useCallback } from 'react';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { memo, useCallback, useState } from 'react';
+import { useAtomValue, useSetAtom, useStore } from 'jotai';
+import { toast } from 'sonner';
 import { activeTokenAtom } from '@/atoms/active-token';
+import { activeDexExchangeAtom } from '@/atoms/dex';
+import {
+	walletAddressAtom,
+	onboardingBlockerAtom,
+} from '@/atoms/user/onboarding';
+import { tradingWs } from '@/services/ws';
+import { setActiveWalletAddress } from '@/normalizer/hyperliquid/exchange';
 import { cn } from '@/lib/utils';
 import {
 	Dialog,
@@ -11,7 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { marginModeAtom } from '../atoms/order-form-atoms';
+import { marginModeAtom, leverageAtom } from '../atoms/order-form-atoms';
 
 interface MarginModeDialogProps {
 	open: boolean;
@@ -41,12 +49,45 @@ export const MarginModeDialog = memo(function MarginModeDialog({
 	const currentMode = useAtomValue(marginModeAtom);
 	const setMarginMode = useSetAtom(marginModeAtom);
 
+	const store = useStore();
+	const [isConfirming, setIsConfirming] = useState(false);
+
 	const handleSelect = useCallback(
 		(mode: 'cross' | 'isolated') => {
 			setMarginMode(mode);
 		},
 		[setMarginMode],
 	);
+
+	const handleConfirm = useCallback(async () => {
+		const blocker = store.get(onboardingBlockerAtom);
+		if (!blocker) {
+			setIsConfirming(true);
+			const address = store.get(walletAddressAtom) ?? '';
+			setActiveWalletAddress(address);
+			const leverage = store.get(leverageAtom);
+			try {
+				const exchange = store.get(activeDexExchangeAtom);
+				await exchange.updateMarginMode(
+					{
+						coin: token,
+						leverage,
+						isCross: currentMode === 'cross',
+					},
+					tradingWs,
+				);
+				toast.success(`Margin mode set to ${currentMode}`);
+			} catch (error) {
+				toast.error(
+					error instanceof Error ? error.message : 'Update margin mode failed',
+				);
+				setIsConfirming(false);
+				return;
+			}
+			setIsConfirming(false);
+		}
+		onOpenChange(false);
+	}, [store, token, currentMode, onOpenChange]);
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -89,8 +130,12 @@ export const MarginModeDialog = memo(function MarginModeDialog({
 				</div>
 
 				<DialogFooter>
-					<Button className="w-full" onClick={() => onOpenChange(false)}>
-						Establish Connection
+					<Button
+						className="w-full"
+						disabled={isConfirming}
+						onClick={handleConfirm}
+					>
+						{isConfirming ? 'Updating...' : 'Confirm'}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

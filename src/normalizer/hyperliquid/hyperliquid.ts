@@ -58,6 +58,10 @@ const HL_INFO_URL = 'https://api.hyperliquid.xyz/info';
 // Module-level caches — populated by init(), read by formatters.
 const szDecimalsMap = new Map<string, number>();
 
+export function getSzDecimals(coin: string): number {
+	return szDecimalsMap.get(coin) ?? 2;
+}
+
 // Tracks active L2 channel subscriptions for WS message routing.
 // Key: coin ("BTC"), Value: full channel key ("l2Book:BTC:5:2")
 const activeL2Channels = new Map<string, string>();

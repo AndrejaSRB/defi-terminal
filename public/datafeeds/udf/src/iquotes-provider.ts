@@ -1,10 +1,13 @@
 import { QuoteData } from '../../../charting_library/datafeed-api';
-import { UdfOkResponse } from './helpers';
+
+import {
+	UdfOkResponse,
+} from './helpers';
 
 export interface UdfQuotesResponse extends UdfOkResponse {
-  d: QuoteData[];
+	d: QuoteData[];
 }
 
 export interface IQuotesProvider {
-  getQuotes(symbols: string[]): Promise<QuoteData[]>;
+	getQuotes(symbols: string[]): Promise<QuoteData[]>;
 }

@@ -76,4 +76,17 @@ export interface DexExchange {
 		params: UpdateLeverageParams,
 		ws: TradingWebSocket,
 	): Promise<void>;
+
+	setPositionTpSl(
+		params: SetPositionTpSlParams,
+		ws: TradingWebSocket,
+	): Promise<void>;
+}
+
+export interface SetPositionTpSlParams {
+	coin: string;
+	side: 'LONG' | 'SHORT';
+	size: number;
+	tp?: number;
+	sl?: number;
 }

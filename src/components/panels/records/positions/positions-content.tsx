@@ -8,6 +8,8 @@ import { PositionsTable } from './positions-table';
 import { PositionCard } from './position-card';
 import { LimitCloseDialog } from './actions/limit-close-dialog';
 import { MarketCloseDialog } from './actions/market-close-dialog';
+import { TpslEditDialog } from './actions/tpsl-edit-dialog';
+import { ReverseDialog } from './actions/reverse-dialog';
 
 export function PositionsContent() {
 	const { isAuthenticated, login } = useAuth();
@@ -17,7 +19,9 @@ export function PositionsContent() {
 		openLimitClose,
 		openMarketClose,
 		reversePosition,
+		executeReverse,
 		closeAllPositions,
+		openTpslEdit,
 		isClosing,
 	} = usePositionActions();
 
@@ -52,6 +56,7 @@ export function PositionsContent() {
 					onMarketClose={openMarketClose}
 					onReverse={reversePosition}
 					onCloseAll={closeAllPositions}
+					onTpslEdit={openTpslEdit}
 				/>
 			) : (
 				<div className="grid gap-2 p-2 sm:grid-cols-2">
@@ -69,6 +74,8 @@ export function PositionsContent() {
 			)}
 			<LimitCloseDialog />
 			<MarketCloseDialog />
+			<TpslEditDialog />
+			<ReverseDialog onConfirm={executeReverse} />
 		</>
 	);
 }

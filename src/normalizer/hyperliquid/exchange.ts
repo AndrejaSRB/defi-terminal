@@ -5,6 +5,7 @@ import type {
 	CancelOrderParams,
 	ModifyOrderParams,
 	UpdateLeverageParams,
+	SetPositionTpSlParams,
 } from '../exchange';
 import type { TradingWebSocket } from '@/services/websocket';
 import {
@@ -12,7 +13,10 @@ import {
 	buildCancelAction,
 	buildModifyAction,
 	buildUpdateLeverageAction,
+	buildPositionTpslAction,
 	signAction,
+	formatPriceForExchange,
+	formatSizeForExchange,
 } from '@/services/hyperliquid/order-builder';
 import { getStoredAgent } from './onboarding';
 
@@ -59,7 +63,25 @@ export const hyperliquidExchange: DexExchange = {
 		_ws: TradingWebSocket,
 	): Promise<OrderResult> {
 		const agent = getValidAgent(activeWalletAddress);
-		const action = buildOrderAction(params);
+		const isMarket = params.type === 'market';
+		const formattedParams = {
+			...params,
+			price: formatPriceForExchange(
+				params.price,
+				params.coin,
+				params.side,
+				isMarket,
+				params.slippage ?? 8,
+			),
+			size: formatSizeForExchange(params.size, params.coin),
+			tp: params.tp
+				? formatPriceForExchange(params.tp, params.coin, params.side, false)
+				: undefined,
+			sl: params.sl
+				? formatPriceForExchange(params.sl, params.coin, params.side, false)
+				: undefined,
+		};
+		const action = buildOrderAction(formattedParams);
 		const nonce = Date.now();
 		const signed = await signAction(
 			action as unknown as Record<string, unknown>,
@@ -123,7 +145,11 @@ export const hyperliquidExchange: DexExchange = {
 		_ws: TradingWebSocket,
 	): Promise<OrderResult> {
 		const agent = getValidAgent(activeWalletAddress);
-		const action = buildModifyAction(params);
+		const action = buildModifyAction({
+			...params,
+			price: formatPriceForExchange(params.price, params.coin, 'buy', false),
+			size: formatSizeForExchange(params.size, params.coin),
+		});
 		const nonce = Date.now();
 		const signed = await signAction(
 			action as unknown as Record<string, unknown>,
@@ -171,7 +197,30 @@ export const hyperliquidExchange: DexExchange = {
 		params: UpdateLeverageParams,
 		_ws: TradingWebSocket,
 	): Promise<void> {
-		// Same endpoint as updateLeverage — isCross controls the mode
 		return this.updateLeverage(params, _ws);
+	},
+
+	async setPositionTpSl(
+		params: SetPositionTpSlParams,
+		_ws: TradingWebSocket,
+	): Promise<void> {
+		const agent = getValidAgent(activeWalletAddress);
+		const formattedParams = {
+			...params,
+			tp: params.tp
+				? formatPriceForExchange(params.tp, params.coin, 'buy', false)
+				: undefined,
+			sl: params.sl
+				? formatPriceForExchange(params.sl, params.coin, 'sell', false)
+				: undefined,
+		};
+		const action = buildPositionTpslAction(formattedParams);
+		const nonce = Date.now();
+		const signed = await signAction(
+			action as unknown as Record<string, unknown>,
+			agent.privateKey as `0x${string}`,
+			nonce,
+		);
+		await postExchange(signed);
 	},
 };

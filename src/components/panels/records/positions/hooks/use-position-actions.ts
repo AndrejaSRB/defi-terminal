@@ -4,13 +4,18 @@ import { toast } from 'sonner';
 import { activeDexExchangeAtom } from '@/atoms/dex';
 import { pricesAtom } from '@/atoms/prices';
 import { userPositionsAtom } from '@/atoms/user/positions';
-import { walletAddressAtom } from '@/atoms/user/onboarding';
+import {
+	walletAddressAtom,
+	onboardingBlockerAtom,
+} from '@/atoms/user/onboarding';
 import { tradingWs } from '@/services/ws';
 import { setActiveWalletAddress } from '@/normalizer/hyperliquid/exchange';
 import { safeParseFloat } from '@/lib/numbers';
+import type { FormattedPosition } from './use-positions-data';
 import {
 	activePositionActionAtom,
 	skipMarketCloseConfirmAtom,
+	skipReverseConfirmAtom,
 	isClosingPositionAtom,
 	type PositionActionData,
 } from '../atoms/position-actions-atoms';
@@ -21,26 +26,35 @@ export function usePositionActions() {
 	const setAction = useSetAtom(activePositionActionAtom);
 	const setIsClosing = useSetAtom(isClosingPositionAtom);
 
+	// Agent gate — all actions must check this first
+	const checkAgent = useCallback((): boolean => {
+		const blocker = store.get(onboardingBlockerAtom);
+		if (blocker) {
+			toast.error('Please enable trading first');
+			return false;
+		}
+		return true;
+	}, [store]);
+
 	const openLimitClose = useCallback(
-		(position: {
-			coin: string;
-			side: 'LONG' | 'SHORT';
-			rawSize: number;
-			rawEntryPrice: number;
-		}) => {
+		(position: FormattedPosition) => {
+			if (!checkAgent()) return;
 			setAction({
 				coin: position.coin,
 				side: position.side,
 				size: position.rawSize,
 				entryPrice: position.rawEntryPrice,
+				markPrice: position.rawMarkPrice,
+				leverage: position.leverage,
 				type: 'limit',
 			});
 		},
-		[setAction],
+		[checkAgent, setAction],
 	);
 
 	const executeMarketClose = useCallback(
 		async (data: PositionActionData) => {
+			if (!checkAgent()) return;
 			if (store.get(isClosingPositionAtom)) return;
 			setIsClosing(true);
 
@@ -81,22 +95,20 @@ export function usePositionActions() {
 				setAction(null);
 			}
 		},
-		[store, setIsClosing, setAction],
+		[checkAgent, store, setIsClosing, setAction],
 	);
 
 	const openMarketClose = useCallback(
-		(position: {
-			coin: string;
-			side: 'LONG' | 'SHORT';
-			rawSize: number;
-			rawEntryPrice: number;
-		}) => {
+		(position: FormattedPosition) => {
+			if (!checkAgent()) return;
 			const skipConfirm = store.get(skipMarketCloseConfirmAtom);
 			const data: PositionActionData = {
 				coin: position.coin,
 				side: position.side,
 				size: position.rawSize,
 				entryPrice: position.rawEntryPrice,
+				markPrice: position.rawMarkPrice,
+				leverage: position.leverage,
 				type: 'market',
 			};
 
@@ -106,58 +118,77 @@ export function usePositionActions() {
 				setAction(data);
 			}
 		},
-		[store, setAction, executeMarketClose],
+		[checkAgent, store, setAction, executeMarketClose],
 	);
 
+	const executeReverse = useCallback(async () => {
+		const data = store.get(activePositionActionAtom);
+		if (!data || store.get(isClosingPositionAtom)) return;
+		setIsClosing(true);
+
+		const address = store.get(walletAddressAtom) ?? '';
+		setActiveWalletAddress(address);
+
+		try {
+			const exchange = store.get(activeDexExchangeAtom);
+			const prices = store.get(pricesAtom);
+			const markPrice = safeParseFloat(prices[data.coin]);
+			const reverseSide = data.side === 'LONG' ? 'sell' : 'buy';
+
+			const result = await exchange.placeOrder(
+				{
+					coin: data.coin,
+					side: reverseSide as 'buy' | 'sell',
+					type: 'market',
+					price: markPrice,
+					size: data.size * 2,
+					reduceOnly: false,
+					tif: 'Ioc',
+				},
+				tradingWs,
+			);
+
+			if (result.status === 'success') {
+				toast.success(`Position reversed: ${data.coin}`);
+			} else {
+				toast.error(result.message ?? 'Reverse failed');
+			}
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : 'Reverse position failed',
+			);
+		} finally {
+			setIsClosing(false);
+			setAction(null);
+		}
+	}, [store, setIsClosing, setAction]);
+
 	const reversePosition = useCallback(
-		async (position: {
-			coin: string;
-			side: 'LONG' | 'SHORT';
-			rawSize: number;
-		}) => {
-			if (store.get(isClosingPositionAtom)) return;
-			setIsClosing(true);
+		(position: FormattedPosition) => {
+			if (!checkAgent()) return;
+			const data: PositionActionData = {
+				coin: position.coin,
+				side: position.side,
+				size: position.rawSize,
+				entryPrice: position.rawEntryPrice,
+				markPrice: position.rawMarkPrice,
+				leverage: position.leverage,
+				type: 'reverse',
+			};
 
-			const address = store.get(walletAddressAtom) ?? '';
-			setActiveWalletAddress(address);
-
-			try {
-				const exchange = store.get(activeDexExchangeAtom);
-				const prices = store.get(pricesAtom);
-				const markPrice = safeParseFloat(prices[position.coin]);
-				// Reverse: opposite side, 2x size (close current + open new)
-				const reverseSide = position.side === 'LONG' ? 'sell' : 'buy';
-
-				const result = await exchange.placeOrder(
-					{
-						coin: position.coin,
-						side: reverseSide,
-						type: 'market',
-						price: markPrice,
-						size: position.rawSize * 2,
-						reduceOnly: false,
-						tif: 'Ioc',
-					},
-					tradingWs,
-				);
-
-				if (result.status === 'success') {
-					toast.success(`Position reversed: ${position.coin}`);
-				} else {
-					toast.error(result.message ?? 'Reverse failed');
-				}
-			} catch (error) {
-				toast.error(
-					error instanceof Error ? error.message : 'Reverse position failed',
-				);
-			} finally {
-				setIsClosing(false);
+			const skipConfirm = store.get(skipReverseConfirmAtom);
+			if (skipConfirm) {
+				setAction(data);
+				executeReverse();
+			} else {
+				setAction(data);
 			}
 		},
-		[store, setIsClosing],
+		[checkAgent, store, setAction, executeReverse],
 	);
 
 	const closeAllPositions = useCallback(async () => {
+		if (!checkAgent()) return;
 		if (store.get(isClosingPositionAtom)) return;
 		setIsClosing(true);
 
@@ -201,14 +232,36 @@ export function usePositionActions() {
 		} finally {
 			setIsClosing(false);
 		}
-	}, [store, setIsClosing]);
+	}, [checkAgent, store, setIsClosing]);
+
+	const openTpslEdit = useCallback(
+		(position: FormattedPosition) => {
+			if (!checkAgent()) return;
+			setAction({
+				coin: position.coin,
+				side: position.side,
+				size: position.rawSize,
+				entryPrice: position.rawEntryPrice,
+				markPrice: position.rawMarkPrice,
+				leverage: position.leverage,
+				type: 'tpsl',
+				tpOrderId: position.tpOrderId,
+				slOrderId: position.slOrderId,
+				tpPrice: position.rawTpPrice,
+				slPrice: position.rawSlPrice,
+			});
+		},
+		[checkAgent, setAction],
+	);
 
 	return {
 		openLimitClose,
 		openMarketClose,
 		reversePosition,
+		executeReverse,
 		closeAllPositions,
 		executeMarketClose,
+		openTpslEdit,
 		isClosing,
 	};
 }

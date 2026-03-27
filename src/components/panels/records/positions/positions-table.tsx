@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils';
 import { sentimentColor } from '@/lib/colors';
 import { CoinLink } from '../components/coin-link';
 import { PositionActionButtons } from './actions/position-action-buttons';
-import { CloseAllButton } from './actions/close-all-button';
+import { CloseAllDialog } from './actions/close-all-dialog';
 import type { FormattedPosition } from './hooks/use-positions-data';
 
 const COLUMNS = [
@@ -24,6 +24,7 @@ interface PositionsTableProps {
 	onMarketClose: (position: FormattedPosition) => void;
 	onReverse: (position: FormattedPosition) => void;
 	onCloseAll: () => void;
+	onTpslEdit: (position: FormattedPosition) => void;
 }
 
 export function PositionsTable({
@@ -33,6 +34,7 @@ export function PositionsTable({
 	onMarketClose,
 	onReverse,
 	onCloseAll,
+	onTpslEdit,
 }: PositionsTableProps) {
 	return (
 		<div className="relative h-full overflow-x-auto no-scrollbar">
@@ -48,11 +50,13 @@ export function PositionsTable({
 							</th>
 						))}
 						<th className="whitespace-nowrap px-2 py-1.5 text-right font-medium">
-							<CloseAllButton
-								hasPositions={positions.length > 0}
-								disabled={isClosing}
-								onClick={onCloseAll}
-							/>
+							{positions.length > 0 ? (
+								<CloseAllDialog onConfirm={onCloseAll} isClosing={isClosing} />
+							) : (
+								<span className="text-muted-foreground font-medium">
+									Actions
+								</span>
+							)}
 						</th>
 						<th className="whitespace-nowrap px-2 py-1.5 text-left font-medium text-muted-foreground">
 							TP/SL
@@ -129,14 +133,36 @@ export function PositionsTable({
 									/>
 								</td>
 								<td className="whitespace-nowrap px-2 py-1.5">
-									{position.tp ?? '--'} / {position.sl ?? '--'}
+									<div className="flex items-center gap-1">
+										<span>
+											{position.tp ?? '--'} / {position.sl ?? '--'}
+										</span>
+										<button
+											type="button"
+											onClick={() => onTpslEdit(position)}
+											className="text-muted-foreground transition-colors hover:text-foreground"
+										>
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												width="12"
+												height="12"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												strokeWidth="2"
+												strokeLinecap="round"
+												strokeLinejoin="round"
+											>
+												<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+											</svg>
+										</button>
+									</div>
 								</td>
 							</tr>
 						);
 					})}
 				</tbody>
 			</table>
-			<div className="pointer-events-none absolute bottom-0 right-0 top-0 w-8 bg-gradient-to-l from-card to-transparent" />
 		</div>
 	);
 }
