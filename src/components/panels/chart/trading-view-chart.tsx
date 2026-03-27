@@ -3,6 +3,7 @@ import { useAtomValue } from 'jotai';
 import { tradingWs } from '@/services/ws';
 import { themeAtom } from '@/atoms/settings';
 import { useChartData } from './hooks/use-chart-data';
+import { useChartLines } from './hooks/use-chart-lines';
 import { createDatafeed } from './datafeed';
 import { LocalStorageSaveLoadAdapter } from './chart-storage';
 import {
@@ -55,6 +56,7 @@ export default function TradingViewChart() {
 
 	const { token, normalizer, assetMetaReady, getPrice } = useChartData();
 	const themeId = useAtomValue(themeAtom);
+	useChartLines(widgetRef, isReady);
 
 	// Widget init
 	useEffect(() => {
