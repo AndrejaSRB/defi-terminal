@@ -31,7 +31,7 @@ export function TopBar() {
 	return (
 		<div className="flex h-10 items-center justify-between border-b border-border px-3">
 			<div className="flex items-center gap-4">
-				<span className="text-sm font-bold">Terminal</span>
+				<span className="text-sm font-bold tracking-wide">Tegra</span>
 			</div>
 
 			<div className="flex items-center gap-2">

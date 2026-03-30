@@ -16,9 +16,9 @@ export function TerminalLayout() {
 	const isDesktop = useMediaQuery('(min-width: 1024px)');
 	useTheme();
 
-	// Sync URL token → atom (default to BTC on /)
+	// Sync URL token → atom — pass exact value, no transformation
 	useEffect(() => {
-		setActiveToken((token ?? DEFAULT_TOKEN).toUpperCase());
+		setActiveToken(token ?? DEFAULT_TOKEN);
 	}, [token, setActiveToken]);
 
 	return (

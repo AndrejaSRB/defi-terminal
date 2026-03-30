@@ -16,9 +16,9 @@ export function useDocumentTitle() {
 
 		if (mid) {
 			const price = normalizer.formatPrice(parseFloat(mid), token);
-			document.title = `${price} | ${name} | Terminal`;
+			document.title = `${price} | ${name} | Tegra`;
 		} else {
-			document.title = `${name} | Terminal`;
+			document.title = `${name} | Tegra`;
 		}
 	}, [token, prices, normalizer]);
 }

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useAtomValue } from 'jotai';
 import { activeTokenAtom } from '@/atoms/active-token';
 import { activeAssetDataAtom } from '@/atoms/active-asset';
@@ -7,6 +7,7 @@ import { activeNormalizerAtom } from '@/atoms/dex';
 import { parseTokenName } from '@/lib/token';
 import { safeParseFloat } from '@/lib/numbers';
 import { pricesAtom } from '@/atoms/prices';
+import { formatCountdown, calculateFundingCountdown } from '@/lib/countdown';
 
 export function useTokenHeaderData() {
 	const token = useAtomValue(activeTokenAtom);
@@ -14,6 +15,18 @@ export function useTokenHeaderData() {
 	const allCtxs = useAtomValue(allAssetCtxsAtom);
 	const normalizer = useAtomValue(activeNormalizerAtom);
 	const prices = useAtomValue(pricesAtom);
+
+	// Live funding countdown — ticks every second
+	const [fundingSeconds, setFundingSeconds] = useState(
+		calculateFundingCountdown,
+	);
+
+	useEffect(() => {
+		const interval = setInterval(() => {
+			setFundingSeconds(calculateFundingCountdown());
+		}, 1000);
+		return () => clearInterval(interval);
+	}, []);
 
 	return useMemo(() => {
 		const { formattedTokenName, dexName } = parseTokenName(token);
@@ -32,7 +45,7 @@ export function useTokenHeaderData() {
 				volume24h: '--',
 				openInterest: '--',
 				fundingRate: '--',
-				fundingInterval: '--',
+				fundingCountdown: '--',
 				isLoading: true,
 			};
 		}
@@ -56,11 +69,11 @@ export function useTokenHeaderData() {
 			change24h: `${changeValue >= 0 ? '+' : ''}${changeValue.toFixed(2)}%`,
 			change24hValue: changeValue,
 			changePx: normalizer.formatPrice(Math.abs(changePxValue), token),
-			volume24h: `$${vol.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
-			openInterest: `$${oi.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
+			volume24h: `$${vol.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+			openInterest: `$${oi.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
 			fundingRate: `${(funding * 100).toFixed(4)}%`,
-			fundingInterval: asset.fundingInterval,
+			fundingCountdown: formatCountdown(fundingSeconds),
 			isLoading: false,
 		};
-	}, [token, wsAsset, allCtxs, normalizer]);
+	}, [token, wsAsset, allCtxs, normalizer, prices, fundingSeconds]);
 }

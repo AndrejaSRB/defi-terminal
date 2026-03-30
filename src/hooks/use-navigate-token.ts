@@ -1,18 +1,17 @@
 import { useCallback } from 'react';
 import { useSetAtom } from 'jotai';
-import { useNavigate } from '@tanstack/react-router';
 import { activeTokenAtom } from '@/atoms/active-token';
 
 export function useNavigateToken() {
 	const setActiveToken = useSetAtom(activeTokenAtom);
-	const navigate = useNavigate();
 
 	const navigateToToken = useCallback(
 		(token: string) => {
 			setActiveToken(token);
-			navigate({ to: '/$token', params: { token } });
+			// Use raw path to avoid TanStack Router encoding `:` as `%3A`
+			window.history.replaceState(null, '', `/${token}`);
 		},
-		[setActiveToken, navigate],
+		[setActiveToken],
 	);
 
 	return navigateToToken;

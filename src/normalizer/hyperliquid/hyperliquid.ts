@@ -486,13 +486,14 @@ export const hyperliquidNormalizer: DexNormalizer = {
 			const ctx = assetCtxs[i];
 			if (asset.isDelisted || !ctx?.markPx) continue;
 
+			const oiUsd = parseFloat(ctx.openInterest) * parseFloat(ctx.markPx);
 			result.set(asset.name, {
 				coin: asset.name,
 				markPrice: ctx.markPx,
 				oraclePrice: ctx.oraclePx,
 				prevDayPx: ctx.prevDayPx,
 				volume24h: ctx.dayNtlVlm,
-				openInterest: ctx.openInterest,
+				openInterest: oiUsd.toString(),
 				fundingRate: ctx.funding,
 				fundingInterval: '8h',
 			});
@@ -515,13 +516,14 @@ export const hyperliquidNormalizer: DexNormalizer = {
 				const ctx = ctxs[i];
 				if (!coin || !ctx) continue;
 
+				const wsOiUsd = Number(ctx.openInterest) * Number(ctx.markPx);
 				result.set(coin, {
 					coin,
 					markPrice: String(ctx.markPx),
 					oraclePrice: String(ctx.oraclePx),
 					prevDayPx: String(ctx.prevDayPx),
 					volume24h: String(ctx.dayNtlVlm),
-					openInterest: String(ctx.openInterest),
+					openInterest: String(wsOiUsd),
 					fundingRate: String(ctx.funding),
 					fundingInterval: '8h',
 				});

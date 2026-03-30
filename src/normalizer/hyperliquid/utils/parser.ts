@@ -64,13 +64,16 @@ export function parseTrades(raw: unknown): Trade[] {
 
 export function parseActiveAsset(raw: unknown): ActiveAssetData {
 	const data = raw as ActiveAssetCtx;
+	const openInterestUsd =
+		parseFloat(data.ctx.openInterest) * parseFloat(data.ctx.markPx);
+
 	return {
 		coin: data.coin,
 		markPrice: data.ctx.markPx,
 		oraclePrice: data.ctx.oraclePx,
 		prevDayPx: data.ctx.prevDayPx,
 		volume24h: data.ctx.dayNtlVlm,
-		openInterest: data.ctx.openInterest,
+		openInterest: openInterestUsd.toString(),
 		fundingRate: data.ctx.funding,
 		fundingInterval: '8h',
 	};

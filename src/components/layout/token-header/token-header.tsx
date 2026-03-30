@@ -40,7 +40,7 @@ export function TokenHeader() {
 					/>
 				</button>
 
-				<div className="flex items-center gap-8 overflow-x-auto text-sm no-scrollbar">
+				<div className="flex items-center gap-12 overflow-x-auto text-sm no-scrollbar">
 					<div className="flex shrink-0 flex-col whitespace-nowrap text-xs">
 						<span className="text-muted-foreground">Mark</span>
 						<span ref={priceRef} className="text-foreground">
@@ -68,7 +68,7 @@ export function TokenHeader() {
 					<div className="flex shrink-0 flex-col whitespace-nowrap pr-8 text-xs">
 						<span className="text-muted-foreground">Funding / Countdown</span>
 						<span className={sentimentColor(0)}>
-							{data.fundingRate} / {data.fundingInterval}
+							{data.fundingRate} / {data.fundingCountdown}
 						</span>
 					</div>
 				</div>
@@ -133,7 +133,7 @@ export function TokenHeader() {
 							<div className="text-right">
 								<span className="text-muted-foreground">Funding</span>
 								<div className="text-foreground">
-									{data.fundingRate} / {data.fundingInterval}
+									{data.fundingRate} / {data.fundingCountdown}
 								</div>
 							</div>
 						</div>
