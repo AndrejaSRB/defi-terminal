@@ -6,6 +6,8 @@ import type {
 	ModifyOrderParams,
 	UpdateLeverageParams,
 	SetPositionTpSlParams,
+	WithdrawParams,
+	WithdrawResult,
 } from '../exchange';
 import type { TradingWebSocket } from '@/services/websocket';
 import {
@@ -18,6 +20,7 @@ import {
 	formatPriceForExchange,
 	formatSizeForExchange,
 } from '@/services/hyperliquid/order-builder';
+import { executeWithdraw } from '@/services/hyperliquid/withdraw';
 import { getStoredAgent } from './onboarding';
 
 const HL_EXCHANGE_URL = 'https://api.hyperliquid.xyz/exchange';
@@ -226,5 +229,24 @@ export const hyperliquidExchange: DexExchange = {
 			nonce,
 		);
 		await postExchange(signed);
+	},
+
+	async withdraw(params: WithdrawParams): Promise<WithdrawResult> {
+		try {
+			await executeWithdraw(
+				{
+					amount: params.amount.toString(),
+					destination: params.destination,
+				},
+				params.sign,
+			);
+			return { status: 'success', message: 'Withdrawal submitted' };
+		} catch (withdrawError) {
+			const message =
+				withdrawError instanceof Error
+					? withdrawError.message
+					: 'Withdrawal failed';
+			return { status: 'error', message };
+		}
 	},
 };

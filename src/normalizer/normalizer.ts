@@ -70,11 +70,23 @@ export interface DepositConfig {
 	estimatedTime: string;
 }
 
+export interface WithdrawConfig {
+	/** Token symbol for display */
+	tokenSymbol: string;
+	/** Fixed fee in human-readable units */
+	fee: number;
+	/** Estimated withdrawal time for display */
+	estimatedTime: string;
+	/** Minimum withdrawal amount */
+	minWithdraw: number;
+}
+
 // ── Dex Normalizer ───────────────────────────────────────────────────
 export interface DexNormalizer {
 	name: string;
 	wsUrl: string;
 	depositConfig: DepositConfig;
+	withdrawConfig: WithdrawConfig;
 
 	// Protocol helpers — assembled into ProtocolHooks by the WS service
 	deserialize: (data: unknown) => unknown;

@@ -84,6 +84,20 @@ export interface DexExchange {
 		params: SetPositionTpSlParams,
 		ws: TradingWebSocket,
 	): Promise<void>;
+
+	withdraw(params: WithdrawParams): Promise<WithdrawResult>;
+}
+
+export interface WithdrawParams {
+	amount: number;
+	destination: string;
+	/** Sign function — withdrawal requires user's EOA signature, not agent */
+	sign: (typedData: unknown) => Promise<string>;
+}
+
+export interface WithdrawResult {
+	status: 'success' | 'error';
+	message: string;
 }
 
 export interface SetPositionTpSlParams {

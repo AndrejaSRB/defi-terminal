@@ -5,6 +5,7 @@ import { sentimentColor } from '@/lib/colors';
 import { Button } from '@/components/ui/button';
 import { walletAddressAtom } from '@/atoms/user/onboarding';
 import { DepositDialog } from './deposit/deposit-dialog';
+import { WithdrawDialog } from './withdraw/withdraw-dialog';
 import {
 	spotEquityAtom,
 	perpsEquityAtom,
@@ -49,10 +50,10 @@ export function AccountPanel() {
 	const isConnected = !!walletAddress;
 
 	const [depositOpen, setDepositOpen] = useState(false);
+	const [withdrawOpen, setWithdrawOpen] = useState(false);
 
-	const openDeposit = useCallback(() => {
-		setDepositOpen(true);
-	}, []);
+	const openDeposit = useCallback(() => setDepositOpen(true), []);
+	const openWithdraw = useCallback(() => setWithdrawOpen(true), []);
 
 	return (
 		<div className="flex h-full flex-col gap-3 overflow-y-auto p-3">
@@ -62,11 +63,12 @@ export function AccountPanel() {
 						<Button size="sm" onClick={openDeposit}>
 							Deposit
 						</Button>
-						<Button size="sm" variant="secondary" disabled>
+						<Button size="sm" variant="secondary" onClick={openWithdraw}>
 							Withdraw
 						</Button>
 					</div>
 					<DepositDialog open={depositOpen} onOpenChange={setDepositOpen} />
+					<WithdrawDialog open={withdrawOpen} onOpenChange={setWithdrawOpen} />
 				</>
 			)}
 

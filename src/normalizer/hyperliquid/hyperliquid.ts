@@ -190,6 +190,12 @@ export const hyperliquidNormalizer: DexNormalizer = {
 		bridgeAddress: '0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7',
 		estimatedTime: '~30 sec',
 	},
+	withdrawConfig: {
+		tokenSymbol: 'USDC',
+		fee: 1,
+		estimatedTime: '~5 min',
+		minWithdraw: 2,
+	},
 
 	deserialize: (data: unknown) =>
 		typeof data === 'string' ? JSON.parse(data) : data,
