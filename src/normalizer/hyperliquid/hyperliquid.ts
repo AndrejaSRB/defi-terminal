@@ -36,6 +36,8 @@ import {
 	parseUserTradingContext,
 } from './utils/parser';
 import { setUniverseOrder } from '@/services/hyperliquid/order-builder';
+import { hlGetTokenImageUrl } from './utils/token-images';
+import { hlTokenCategories } from './utils/token-categories';
 
 // ── HL-specific channel descriptor ──────────────────────────────────
 type HLChannelDescriptor =
@@ -196,6 +198,8 @@ export const hyperliquidNormalizer: DexNormalizer = {
 		estimatedTime: '~5 min',
 		minWithdraw: 2,
 	},
+	tokenCategories: hlTokenCategories,
+	getTokenImageUrl: hlGetTokenImageUrl,
 
 	deserialize: (data: unknown) =>
 		typeof data === 'string' ? JSON.parse(data) : data,

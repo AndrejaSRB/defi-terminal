@@ -81,12 +81,21 @@ export interface WithdrawConfig {
 	minWithdraw: number;
 }
 
+// ── Token Category ──────────────────────────────────────────────────
+export interface TokenCategory {
+	id: string;
+	label: string;
+	filter: (coin: string) => boolean;
+}
+
 // ── Dex Normalizer ───────────────────────────────────────────────────
 export interface DexNormalizer {
 	name: string;
 	wsUrl: string;
 	depositConfig: DepositConfig;
 	withdrawConfig: WithdrawConfig;
+	tokenCategories: TokenCategory[];
+	getTokenImageUrl: (coin: string) => string;
 
 	// Protocol helpers — assembled into ProtocolHooks by the WS service
 	deserialize: (data: unknown) => unknown;

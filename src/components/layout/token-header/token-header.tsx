@@ -1,6 +1,9 @@
 import { useRef } from 'react';
+import { useAtomValue } from 'jotai';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { activeTokenAtom } from '@/atoms/active-token';
+import { activeNormalizerAtom } from '@/atoms/dex';
 import { useTokenHeaderExpand } from './hooks/use-token-header-expand';
 import { useTokenHeaderData } from './hooks/use-token-header-data';
 import { useTokenSelector } from './hooks/use-token-selector';
@@ -14,6 +17,9 @@ export function TokenHeader() {
 	const data = useTokenHeaderData();
 	const selector = useTokenSelector();
 	const priceRef = usePriceFlash(data.markPriceRaw);
+	const activeToken = useAtomValue(activeTokenAtom);
+	const normalizer = useAtomValue(activeNormalizerAtom);
+	const tokenImageUrl = normalizer.getTokenImageUrl(activeToken);
 
 	const changeColor = sentimentColor(data.change24hValue);
 
@@ -26,6 +32,17 @@ export function TokenHeader() {
 					onClick={selector.toggle}
 					className="flex shrink-0 items-center gap-2 px-4 py-2 hover:bg-muted/50 transition-colors"
 				>
+					<span className="relative size-5 shrink-0">
+						<span className="absolute inset-0 rounded-full bg-muted" />
+						<img
+							src={tokenImageUrl}
+							alt=""
+							className="relative size-5 rounded-full bg-white/10 p-px"
+							onError={(event) => {
+								event.currentTarget.style.display = 'none';
+							}}
+						/>
+					</span>
 					<span className="text-lg font-semibold">{data.symbol}</span>
 					{data.dexName && (
 						<span className="text-xs text-muted-foreground">
@@ -84,6 +101,17 @@ export function TokenHeader() {
 						onClick={selector.toggle}
 						className="flex items-center gap-2"
 					>
+						<span className="relative size-4 shrink-0">
+							<span className="absolute inset-0 rounded-full bg-muted" />
+							<img
+								src={tokenImageUrl}
+								alt=""
+								className="relative size-4 rounded-full bg-white/10 p-px"
+								onError={(event) => {
+									event.currentTarget.style.display = 'none';
+								}}
+							/>
+						</span>
 						<span className="text-sm font-bold">{data.symbol}</span>
 						{data.dexName && (
 							<span className="text-[11px] text-muted-foreground">
