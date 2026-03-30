@@ -50,10 +50,31 @@ export interface FormatPriceOptions {
 	hasDollarSign?: boolean;
 }
 
+// ── Deposit Config ──────────────────────────────────────────────────
+export interface DepositConfig {
+	/** Chain ID where the DEX accepts deposits */
+	chainId: number;
+	/** Token address the DEX accepts (USDC, etc.) */
+	tokenAddress: string;
+	/** Token symbol for display */
+	tokenSymbol: string;
+	/** Token decimals */
+	tokenDecimals: number;
+	/** Minimum deposit in human-readable units */
+	minDeposit: number;
+	/** Fixed fee in human-readable units */
+	fee: number;
+	/** Bridge/deposit contract address */
+	bridgeAddress: string;
+	/** Estimated deposit time for display */
+	estimatedTime: string;
+}
+
 // ── Dex Normalizer ───────────────────────────────────────────────────
 export interface DexNormalizer {
 	name: string;
 	wsUrl: string;
+	depositConfig: DepositConfig;
 
 	// Protocol helpers — assembled into ProtocolHooks by the WS service
 	deserialize: (data: unknown) => unknown;

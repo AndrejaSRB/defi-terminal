@@ -32,7 +32,7 @@ export const OrderBookRow = memo(function OrderBookRow({
 			className="relative grid min-h-[22px] flex-1 cursor-pointer grid-cols-3 items-center text-xs hover:bg-muted/30"
 		>
 			<div
-				className="absolute inset-y-0 left-0 transition-[width] duration-[50ms] ease-out"
+				className="absolute inset-y-0 left-0 transition-[width] duration-50 ease-out"
 				style={{
 					width: `${level.depthPercent}%`,
 					backgroundColor: isAsk ? ASK_COLOR : BID_COLOR,

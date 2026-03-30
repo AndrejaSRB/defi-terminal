@@ -1,7 +1,9 @@
+import { useState, useCallback } from 'react';
 import { useAtomValue } from 'jotai';
 import { cn } from '@/lib/utils';
 import { sentimentColor } from '@/lib/colors';
 import { Button } from '@/components/ui/button';
+import { DepositDialog } from './deposit/deposit-dialog';
 import {
 	spotEquityAtom,
 	perpsEquityAtom,
@@ -43,14 +45,23 @@ export function AccountPanel() {
 	const maintenanceMargin = useAtomValue(maintenanceMarginAtom);
 	const crossLeverage = useAtomValue(crossAccountLeverageAtom);
 
+	const [depositOpen, setDepositOpen] = useState(false);
+
+	const openDeposit = useCallback(() => {
+		setDepositOpen(true);
+	}, []);
+
 	return (
 		<div className="flex h-full flex-col gap-3 overflow-y-auto p-3">
 			<div className="grid grid-cols-2 gap-2">
-				<Button size="sm">Deposit</Button>
-				<Button size="sm" variant="secondary">
+				<Button size="sm" onClick={openDeposit}>
+					Deposit
+				</Button>
+				<Button size="sm" variant="secondary" disabled>
 					Withdraw
 				</Button>
 			</div>
+			<DepositDialog open={depositOpen} onOpenChange={setDepositOpen} />
 
 			<div className="space-y-2 text-xs">
 				<h3 className="font-medium text-foreground">Account Equity</h3>

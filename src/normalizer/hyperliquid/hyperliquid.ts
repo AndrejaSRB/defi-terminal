@@ -180,6 +180,16 @@ function parseWsCandle(
 export const hyperliquidNormalizer: DexNormalizer = {
 	name: 'HyperLiquid',
 	wsUrl: 'wss://api.hyperliquid.xyz/ws',
+	depositConfig: {
+		chainId: 42161,
+		tokenAddress: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+		tokenSymbol: 'USDC',
+		tokenDecimals: 6,
+		minDeposit: 5,
+		fee: 0.2,
+		bridgeAddress: '0x2Df1c51E09aECF9cacB7bc98cB1742757f163dF7',
+		estimatedTime: '~30 sec',
+	},
 
 	deserialize: (data: unknown) =>
 		typeof data === 'string' ? JSON.parse(data) : data,
