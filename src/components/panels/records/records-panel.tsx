@@ -18,7 +18,10 @@ export function RecordsPanel() {
 	return (
 		<Tabs defaultValue="positions" className="flex h-full flex-col gap-0">
 			<div className="relative shrink-0">
-				<TabsList variant="line" className="h-8 rounded-none px-2">
+				<TabsList
+					variant="line"
+					className="no-scrollbar flex h-8 w-full flex-nowrap justify-start overflow-x-auto rounded-none px-2 [&>*]:flex-none"
+				>
 					<TabsTrigger value="balances" className="text-xs">
 						Balances{balanceCount > 0 ? ` (${balanceCount})` : ''}
 					</TabsTrigger>

@@ -79,6 +79,11 @@ const CrosschainTab = ({ onSuccess }: { onSuccess: () => void }) => {
 	// Form view
 	return (
 		<div className="space-y-4">
+			<p className="text-xs text-muted-foreground">
+				Bridge tokens from another chain to {quote.destChainName}. Once arrived,
+				use the Deposit option to fund your trading account.
+			</p>
+
 			{/* From section */}
 			<div className="space-y-2">
 				<span className="text-xs font-medium text-muted-foreground">From</span>

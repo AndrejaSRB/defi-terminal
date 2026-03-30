@@ -28,13 +28,22 @@ function DialogOverlay({
 function DialogContent({
 	className,
 	children,
+	preventOutsideClose,
 	...props
-}: React.ComponentProps<typeof DialogPrimitive.Content>) {
+}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+	preventOutsideClose?: boolean;
+}) {
+	const prevent = preventOutsideClose
+		? (event: Event) => event.preventDefault()
+		: undefined;
+
 	return (
 		<DialogPortal>
 			<DialogOverlay />
 			<DialogPrimitive.Content
 				data-slot="dialog-content"
+				onPointerDownOutside={prevent}
+				onInteractOutside={prevent}
 				className={cn(
 					'fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card p-6 shadow-xl',
 					'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',

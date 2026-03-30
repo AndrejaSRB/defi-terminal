@@ -3,6 +3,7 @@ import { useAtomValue } from 'jotai';
 import { cn } from '@/lib/utils';
 import { sentimentColor } from '@/lib/colors';
 import { Button } from '@/components/ui/button';
+import { walletAddressAtom } from '@/atoms/user/onboarding';
 import { DepositDialog } from './deposit/deposit-dialog';
 import {
 	spotEquityAtom,
@@ -44,6 +45,8 @@ export function AccountPanel() {
 	const crossMarginRatio = useAtomValue(crossMarginRatioAtom);
 	const maintenanceMargin = useAtomValue(maintenanceMarginAtom);
 	const crossLeverage = useAtomValue(crossAccountLeverageAtom);
+	const walletAddress = useAtomValue(walletAddressAtom);
+	const isConnected = !!walletAddress;
 
 	const [depositOpen, setDepositOpen] = useState(false);
 
@@ -53,15 +56,19 @@ export function AccountPanel() {
 
 	return (
 		<div className="flex h-full flex-col gap-3 overflow-y-auto p-3">
-			<div className="grid grid-cols-2 gap-2">
-				<Button size="sm" onClick={openDeposit}>
-					Deposit
-				</Button>
-				<Button size="sm" variant="secondary" disabled>
-					Withdraw
-				</Button>
-			</div>
-			<DepositDialog open={depositOpen} onOpenChange={setDepositOpen} />
+			{isConnected && (
+				<>
+					<div className="grid grid-cols-2 gap-2">
+						<Button size="sm" onClick={openDeposit}>
+							Deposit
+						</Button>
+						<Button size="sm" variant="secondary" disabled>
+							Withdraw
+						</Button>
+					</div>
+					<DepositDialog open={depositOpen} onOpenChange={setDepositOpen} />
+				</>
+			)}
 
 			<div className="space-y-2 text-xs">
 				<h3 className="font-medium text-foreground">Account Equity</h3>
