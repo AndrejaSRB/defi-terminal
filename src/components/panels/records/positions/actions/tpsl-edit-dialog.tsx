@@ -5,7 +5,6 @@ import { activeDexExchangeAtom, activeNormalizerAtom } from '@/atoms/dex';
 import { pricesAtom } from '@/atoms/prices';
 import { walletAddressAtom } from '@/atoms/user/onboarding';
 import { tradingWs } from '@/services/ws';
-import { setActiveWalletAddress } from '@/normalizer/hyperliquid/exchange';
 import { safeParseFloat } from '@/lib/numbers';
 import {
 	Dialog,
@@ -147,7 +146,7 @@ export const TpslEditDialog = memo(function TpslEditDialog() {
 		if (!existingTpId || isClosing) return;
 		setIsClosing(true);
 		const address = store.get(walletAddressAtom) ?? '';
-		setActiveWalletAddress(address);
+		store.get(activeDexExchangeAtom).setWalletAddress(address);
 		try {
 			const exchange = store.get(activeDexExchangeAtom);
 			await exchange.cancelOrder({ coin, orderId: existingTpId }, tradingWs);
@@ -164,7 +163,7 @@ export const TpslEditDialog = memo(function TpslEditDialog() {
 		if (!existingSLId || isClosing) return;
 		setIsClosing(true);
 		const address = store.get(walletAddressAtom) ?? '';
-		setActiveWalletAddress(address);
+		store.get(activeDexExchangeAtom).setWalletAddress(address);
 		try {
 			const exchange = store.get(activeDexExchangeAtom);
 			await exchange.cancelOrder({ coin, orderId: existingSLId }, tradingWs);
@@ -186,7 +185,7 @@ export const TpslEditDialog = memo(function TpslEditDialog() {
 
 		setIsClosing(true);
 		const address = store.get(walletAddressAtom) ?? '';
-		setActiveWalletAddress(address);
+		store.get(activeDexExchangeAtom).setWalletAddress(address);
 
 		try {
 			const exchange = store.get(activeDexExchangeAtom);

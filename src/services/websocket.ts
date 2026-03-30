@@ -153,6 +153,19 @@ class TradingWebSocket {
 		this.setState('disconnected');
 	}
 
+	/** Swap URL and protocol for a different DEX. Disconnects first if connected. */
+	reconfigure(config: { url: string; protocol: ProtocolHooks }) {
+		this.disconnect();
+		this.config = { ...this.config, ...config };
+		this.protocol = config.protocol;
+		this.subscribers.clear();
+		this.lastMessages.clear();
+		this.channelDescriptors.clear();
+		this.buffers.clear();
+		this.sendQueue = [];
+		this.reconnectAttempt = 0;
+	}
+
 	/**
 	 * Send a general data message (e.g. place order).
 	 * Queued if not connected. Subscriptions and pings bypass this.

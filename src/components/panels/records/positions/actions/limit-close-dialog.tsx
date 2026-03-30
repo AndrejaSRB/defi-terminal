@@ -5,7 +5,6 @@ import { activeDexExchangeAtom } from '@/atoms/dex';
 import { pricesAtom } from '@/atoms/prices';
 import { walletAddressAtom } from '@/atoms/user/onboarding';
 import { tradingWs } from '@/services/ws';
-import { setActiveWalletAddress } from '@/normalizer/hyperliquid/exchange';
 import { safeParseFloat } from '@/lib/numbers';
 import {
 	Dialog,
@@ -64,7 +63,7 @@ export const LimitCloseDialog = memo(function LimitCloseDialog() {
 		setIsClosing(true);
 
 		const address = store.get(walletAddressAtom) ?? '';
-		setActiveWalletAddress(address);
+		store.get(activeDexExchangeAtom).setWalletAddress(address);
 
 		try {
 			const exchange = store.get(activeDexExchangeAtom);

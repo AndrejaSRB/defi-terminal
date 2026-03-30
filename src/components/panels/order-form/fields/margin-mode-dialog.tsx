@@ -8,7 +8,6 @@ import {
 	onboardingBlockerAtom,
 } from '@/atoms/user/onboarding';
 import { tradingWs } from '@/services/ws';
-import { setActiveWalletAddress } from '@/normalizer/hyperliquid/exchange';
 import { cn } from '@/lib/utils';
 import {
 	Dialog,
@@ -64,7 +63,7 @@ export const MarginModeDialog = memo(function MarginModeDialog({
 		if (!blocker) {
 			setIsConfirming(true);
 			const address = store.get(walletAddressAtom) ?? '';
-			setActiveWalletAddress(address);
+			store.get(activeDexExchangeAtom).setWalletAddress(address);
 			const leverage = store.get(leverageAtom);
 			try {
 				const exchange = store.get(activeDexExchangeAtom);

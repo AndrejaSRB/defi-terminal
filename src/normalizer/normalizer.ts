@@ -53,6 +53,12 @@ export interface FormatPriceOptions {
 // ── Dex Normalizer ───────────────────────────────────────────────────
 export interface DexNormalizer {
 	name: string;
+	wsUrl: string;
+
+	// Protocol helpers — assembled into ProtocolHooks by the WS service
+	deserialize: (data: unknown) => unknown;
+	formatPing: () => object;
+	isPong: (message: unknown) => boolean;
 
 	// Lifecycle
 	init: () => Promise<Map<string, AssetMeta>>;

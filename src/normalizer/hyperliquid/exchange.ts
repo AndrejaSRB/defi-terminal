@@ -58,6 +58,10 @@ export function setActiveWalletAddress(address: string) {
 }
 
 export const hyperliquidExchange: DexExchange = {
+	setWalletAddress(address: string) {
+		activeWalletAddress = address.toLowerCase();
+	},
+
 	async placeOrder(
 		params: PlaceOrderParams,
 		_ws: TradingWebSocket,

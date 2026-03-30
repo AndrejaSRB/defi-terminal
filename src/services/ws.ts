@@ -1,9 +1,6 @@
 import { TradingWebSocket } from './websocket';
-import { hyperliquidNormalizer } from '@/normalizer/hyperliquid/hyperliquid';
 import type { DexNormalizer } from '@/normalizer/normalizer';
 import type { ProtocolHooks } from '@/normalizer/normalizer';
-
-const HL_WS_URL = 'wss://api.hyperliquid.xyz/ws';
 
 function buildProtocolHooks(normalizer: DexNormalizer): ProtocolHooks {
 	return {
@@ -11,23 +8,30 @@ function buildProtocolHooks(normalizer: DexNormalizer): ProtocolHooks {
 		formatSubscribe: normalizer.formatSubscribe,
 		formatUnsubscribe: normalizer.formatUnsubscribe,
 		parseMessage: normalizer.parseWsMessage,
-		deserialize: (data: unknown) =>
-			typeof data === 'string' ? JSON.parse(data) : data,
-		formatPing: () => ({ method: 'ping' }),
-		isPong: (message: unknown) =>
-			typeof message === 'object' &&
-			message !== null &&
-			(message as { channel?: string }).channel === 'pong',
+		deserialize: normalizer.deserialize,
+		formatPing: normalizer.formatPing,
+		isPong: normalizer.isPong,
 	};
 }
 
-const activeNormalizer: DexNormalizer = hyperliquidNormalizer;
-
+// Placeholder URL — reconfigured before first connect via configureDexWs()
 export const tradingWs = new TradingWebSocket({
-	url: HL_WS_URL,
-	protocol: buildProtocolHooks(activeNormalizer),
+	url: 'wss://placeholder',
+	protocol: {
+		channelKey: () => '',
+		formatSubscribe: () => ({}),
+		formatUnsubscribe: () => ({}),
+		parseMessage: () => null,
+		deserialize: (data: unknown) => data,
+		formatPing: () => ({}),
+		isPong: () => false,
+	},
 });
 
-export function getActiveNormalizer(): DexNormalizer {
-	return activeNormalizer;
+/** Reconfigure the WS singleton for a new DEX. Call before connect(). */
+export function configureDexWs(normalizer: DexNormalizer): void {
+	tradingWs.reconfigure({
+		url: normalizer.wsUrl,
+		protocol: buildProtocolHooks(normalizer),
+	});
 }

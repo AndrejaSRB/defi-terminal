@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { tradingWs } from '@/services/ws';
+import { tradingWs, configureDexWs } from '@/services/ws';
 import { activeNormalizerAtom } from '@/atoms/dex';
 import { assetMetaAtom } from '@/atoms/asset-meta';
 import { connectionStateAtom } from '@/atoms/connection';
@@ -14,6 +14,9 @@ export function useWsConnection() {
 
 	useEffect(() => {
 		let cancelled = false;
+
+		// Configure protocol SYNCHRONOUSLY so other hooks' subscriptions use correct keys
+		configureDexWs(normalizer);
 
 		(async () => {
 			try {

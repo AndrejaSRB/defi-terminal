@@ -45,6 +45,9 @@ export interface UpdateLeverageParams {
 // ── DexExchange Interface ───────────────────────────────────────────
 
 export interface DexExchange {
+	/** Set the active wallet address for signing operations */
+	setWalletAddress(address: string): void;
+
 	placeOrder(
 		params: PlaceOrderParams,
 		ws: TradingWebSocket,

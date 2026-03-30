@@ -10,7 +10,6 @@ import {
 } from '@/atoms/user/onboarding';
 import { useWalletSigner } from '@/hooks/use-wallet-signer';
 import { tradingWs } from '@/services/ws';
-import { setActiveWalletAddress } from '@/normalizer/hyperliquid/exchange';
 import { safeParseFloat } from '@/lib/numbers';
 import {
 	orderSideAtom,
@@ -394,7 +393,7 @@ export function useOrderFormActions(): OrderFormActions {
 		store.set(isSubmittingAtom, true);
 		try {
 			const address = store.get(walletAddressAtom) ?? '';
-			setActiveWalletAddress(address);
+			store.get(activeDexExchangeAtom).setWalletAddress(address);
 
 			const exchange = store.get(activeDexExchangeAtom);
 			const token = store.get(activeTokenAtom);

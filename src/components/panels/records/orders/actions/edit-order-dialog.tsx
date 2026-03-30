@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 import { activeDexExchangeAtom, activeNormalizerAtom } from '@/atoms/dex';
 import { walletAddressAtom } from '@/atoms/user/onboarding';
 import { tradingWs } from '@/services/ws';
-import { setActiveWalletAddress } from '@/normalizer/hyperliquid/exchange';
 import { safeParseFloat } from '@/lib/numbers';
 import {
 	Dialog,
@@ -52,7 +51,7 @@ export const EditOrderDialog = memo(function EditOrderDialog({
 		setIsSubmitting(true);
 
 		const address = store.get(walletAddressAtom) ?? '';
-		setActiveWalletAddress(address);
+		store.get(activeDexExchangeAtom).setWalletAddress(address);
 
 		try {
 			const exchange = store.get(activeDexExchangeAtom);

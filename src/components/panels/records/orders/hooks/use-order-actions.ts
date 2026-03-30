@@ -9,7 +9,6 @@ import {
 	onboardingBlockerAtom,
 } from '@/atoms/user/onboarding';
 import { tradingWs } from '@/services/ws';
-import { setActiveWalletAddress } from '@/normalizer/hyperliquid/exchange';
 
 export const isProcessingOrderAtom = atom<boolean>(false);
 
@@ -33,7 +32,7 @@ export function useOrderActions() {
 			store.set(isProcessingOrderAtom, true);
 
 			const address = store.get(walletAddressAtom) ?? '';
-			setActiveWalletAddress(address);
+			store.get(activeDexExchangeAtom).setWalletAddress(address);
 
 			try {
 				const exchange = store.get(activeDexExchangeAtom);
@@ -56,7 +55,7 @@ export function useOrderActions() {
 		store.set(isProcessingOrderAtom, true);
 
 		const address = store.get(walletAddressAtom) ?? '';
-		setActiveWalletAddress(address);
+		store.get(activeDexExchangeAtom).setWalletAddress(address);
 
 		try {
 			const exchange = store.get(activeDexExchangeAtom);

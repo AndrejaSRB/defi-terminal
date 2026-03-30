@@ -179,6 +179,15 @@ function parseWsCandle(
 
 export const hyperliquidNormalizer: DexNormalizer = {
 	name: 'HyperLiquid',
+	wsUrl: 'wss://api.hyperliquid.xyz/ws',
+
+	deserialize: (data: unknown) =>
+		typeof data === 'string' ? JSON.parse(data) : data,
+	formatPing: () => ({ method: 'ping' }),
+	isPong: (message: unknown) =>
+		typeof message === 'object' &&
+		message !== null &&
+		(message as { channel?: string }).channel === 'pong',
 
 	async init() {
 		const res = await fetch(HL_INFO_URL, {
