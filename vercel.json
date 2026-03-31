@@ -1,4 +1,10 @@
 {
 	"outputDirectory": "dist",
-	"rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+	"rewrites": [
+		{
+			"source": "/api/extended/:path*",
+			"destination": "/api/extended/[...path]"
+		},
+		{ "source": "/(.*)", "destination": "/index.html" }
+	]
 }
