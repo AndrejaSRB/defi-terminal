@@ -72,10 +72,14 @@ export default async function handler(
 	}
 
 	try {
+		const method = req.method ?? 'GET';
+		const hasBody =
+			method !== 'GET' && method !== 'HEAD' && req.body != null;
+
 		const response = await fetch(target, {
-			method: req.method ?? 'GET',
+			method,
 			headers,
-			...(req.body ? { body: JSON.stringify(req.body) } : {}),
+			...(hasBody ? { body: JSON.stringify(req.body) } : {}),
 		});
 
 		const contentType =
@@ -85,6 +89,6 @@ export default async function handler(
 		const data = Buffer.from(await response.arrayBuffer());
 		res.status(response.status).send(data);
 	} catch (err) {
-		res.status(502).json({ error: 'Proxy fetch failed', details: String(err) });
+		res.status(502).json({ error: 'Proxy fetch failed' });
 	}
 }
