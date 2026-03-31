@@ -1,13 +1,16 @@
 import { useCallback } from 'react';
-import { useAtom } from 'jotai';
-import { Eye, EyeOff } from 'lucide-react';
+import { useAtom, useSetAtom } from 'jotai';
+import { Eye, EyeOff, RotateCcw } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import {
 	panelVisibilityAtom,
 	PANEL_IDS,
 	PANEL_LABELS,
 	type PanelId,
 } from '@/atoms/settings';
+import { resetPanelLayoutAtom } from '@/atoms/user/panel-layout';
 
 function PanelToggleCard({
 	panelId,
@@ -53,6 +56,7 @@ function PanelToggleCard({
 
 export function LayoutTab() {
 	const [visibility, setVisibility] = useAtom(panelVisibilityAtom);
+	const resetLayout = useSetAtom(resetPanelLayoutAtom);
 
 	const visibleCount = Object.values(visibility).filter(Boolean).length;
 
@@ -63,8 +67,20 @@ export function LayoutTab() {
 		[setVisibility],
 	);
 
+	const handleReset = useCallback(() => {
+		setVisibility({
+			chart: true,
+			orderbook: true,
+			orderForm: true,
+			records: true,
+			account: true,
+		});
+		resetLayout();
+		toast.success('Layout reset to default');
+	}, [setVisibility, resetLayout]);
+
 	return (
-		<div className="space-y-3">
+		<div className="space-y-4">
 			<p className="text-xs text-muted-foreground">
 				Toggle which panels are visible in the terminal layout.
 			</p>
@@ -80,6 +96,16 @@ export function LayoutTab() {
 					/>
 				))}
 			</div>
+
+			<Button
+				variant="secondary"
+				size="sm"
+				className="w-full gap-2"
+				onClick={handleReset}
+			>
+				<RotateCcw className="size-3.5" />
+				Fresh Start
+			</Button>
 		</div>
 	);
 }

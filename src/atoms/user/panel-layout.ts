@@ -1,42 +1,41 @@
 import { atom } from 'jotai';
-import { walletAddressAtom } from './onboarding';
 
 type Layout = { [id: string]: number };
 type LayoutMap = Record<string, Layout>;
 
-function buildStorageKey(wallet: string | null): string {
-	return `panel-layout:${wallet ?? 'default'}`;
-}
+const STORAGE_KEY = 'panel-layout';
 
-function readLayouts(key: string): LayoutMap {
+function readLayouts(): LayoutMap {
 	try {
-		const stored = localStorage.getItem(key);
+		const stored = localStorage.getItem(STORAGE_KEY);
 		return stored ? (JSON.parse(stored) as LayoutMap) : {};
 	} catch {
 		return {};
 	}
 }
 
-function writeLayouts(key: string, layouts: LayoutMap): void {
-	localStorage.setItem(key, JSON.stringify(layouts));
+function writeLayouts(layouts: LayoutMap): void {
+	localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts));
 }
 
 const versionAtom = atom(0);
 
 export const panelLayoutsAtom = atom((get) => {
 	get(versionAtom);
-	const wallet = get(walletAddressAtom);
-	return readLayouts(buildStorageKey(wallet));
+	return readLayouts();
 });
 
 export const savePanelLayoutAtom = atom(
 	null,
-	(get, set, payload: { groupId: string; layout: Layout }) => {
-		const wallet = get(walletAddressAtom);
-		const key = buildStorageKey(wallet);
-		const layouts = readLayouts(key);
+	(_get, set, payload: { groupId: string; layout: Layout }) => {
+		const layouts = readLayouts();
 		layouts[payload.groupId] = payload.layout;
-		writeLayouts(key, layouts);
+		writeLayouts(layouts);
 		set(versionAtom, (prev) => prev + 1);
 	},
 );
+
+export const resetPanelLayoutAtom = atom(null, (_get, set) => {
+	localStorage.removeItem(STORAGE_KEY);
+	set(versionAtom, (prev) => prev + 1);
+});
