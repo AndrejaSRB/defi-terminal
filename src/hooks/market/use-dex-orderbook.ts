@@ -9,10 +9,11 @@ import type { OrderBook } from '@/normalizer/types';
 
 /**
  * rAF-batched orderbook hook.
- * WS can fire many updates per second — we buffer the latest
- * and flush to the atom once per animation frame (~60fps max).
- * This prevents React from re-rendering the orderbook on every
- * WS tick while keeping the display visually smooth.
+ *
+ * Two modes depending on the normalizer:
+ * - **Snapshot mode** (HL): each WS message is a full book
+ * - **Accumulator mode** (Extended): REST snapshot + WS deltas merged
+ *   via OrderBookAccumulator with buffering to prevent race conditions
  */
 export function useDexOrderbook() {
 	const normalizer = useAtomValue(activeNormalizerAtom);
@@ -32,22 +33,72 @@ export function useDexOrderbook() {
 		}
 	}, [setOrderBook]);
 
+	const scheduleFlush = useCallback(
+		(book: OrderBook) => {
+			pendingRef.current = book;
+			if (!rafRef.current) {
+				rafRef.current = requestAnimationFrame(flush);
+			}
+		},
+		[flush],
+	);
+
 	useEffect(() => {
+		let cancelled = false;
+
 		setOrderBook((prev) => ({
 			...prev,
 			status: prev.status === 'idle' ? 'loading' : prev.status,
 		}));
 
 		const channel = normalizer.channels.orderBook(token, agg ?? undefined);
-		const unsub = tradingWs.subscribe(channel, (raw) => {
-			pendingRef.current = normalizer.parseOrderBook(raw);
 
-			if (!rafRef.current) {
-				rafRef.current = requestAnimationFrame(flush);
-			}
+		if (normalizer.createOrderBookAccumulator && normalizer.feedOrderBook) {
+			// ── Accumulator mode: REST snapshot + WS deltas ──
+			const accumulator = normalizer.createOrderBookAccumulator();
+			const feed = normalizer.feedOrderBook;
+
+			// Subscribe WS immediately — messages buffer until seeded
+			const unsub = tradingWs.subscribe(channel, (raw) => {
+				if (accumulator.bufferIfNeeded(raw)) return;
+				feed(raw, accumulator);
+				scheduleFlush(accumulator.getBook());
+			});
+
+			// Fetch REST snapshot, then seed accumulator (replays buffered deltas)
+			normalizer
+				.fetchOrderBook(token, agg ?? undefined)
+				.then((snapshot) => {
+					if (cancelled) return;
+					accumulator.seed(snapshot, feed);
+					scheduleFlush(accumulator.getBook());
+				})
+				.catch((error) => {
+					if (cancelled) return;
+					console.error('[Orderbook] REST snapshot failed:', error);
+					// Seed with empty book so WS SNAPSHOT can take over
+					const empty = { bids: [], asks: [], timestamp: 0 };
+					accumulator.seed(empty, feed);
+				});
+
+			return () => {
+				cancelled = true;
+				unsub();
+				if (rafRef.current) {
+					cancelAnimationFrame(rafRef.current);
+					rafRef.current = 0;
+				}
+				pendingRef.current = null;
+			};
+		}
+
+		// ── Snapshot mode: each WS message is a full book ──
+		const unsub = tradingWs.subscribe(channel, (raw) => {
+			scheduleFlush(normalizer.parseOrderBook(raw));
 		});
 
 		return () => {
+			cancelled = true;
 			unsub();
 			if (rafRef.current) {
 				cancelAnimationFrame(rafRef.current);
@@ -55,5 +106,5 @@ export function useDexOrderbook() {
 			}
 			pendingRef.current = null;
 		};
-	}, [normalizer, token, agg, setOrderBook, flush]);
+	}, [normalizer, token, agg, setOrderBook, scheduleFlush]);
 }

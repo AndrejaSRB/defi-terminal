@@ -1,6 +1,6 @@
 import { atom } from 'jotai';
 import { safeParseFloat } from '@/lib/numbers';
-import { activeDexOnboardingAtom } from '@/atoms/dex';
+import { activeDexOnboardingAtom, activeNormalizerAtom } from '@/atoms/dex';
 import { userMarginAtom, userSpotBalancesAtom } from '@/atoms/user/balances';
 import type { OnboardingStep } from '@/normalizer/onboarding';
 
@@ -14,6 +14,11 @@ export const onboardingVersionAtom = atom(0);
 export const isOnboardingDataReadyAtom = atom((get) => {
 	const address = get(walletAddressAtom);
 	if (!address) return false;
+
+	// DEXes without user WS channels (e.g. Extended) are ready once wallet is connected
+	const normalizer = get(activeNormalizerAtom);
+	if (!normalizer.channels.userPositions) return true;
+
 	// Wait for at least one WS delivery of balance data
 	return get(userMarginAtom) !== null;
 });
@@ -29,6 +34,8 @@ export const onboardingStepsAtom = atom<OnboardingStep[]>((get) => {
 	get(onboardingVersionAtom);
 
 	const onboarding = get(activeDexOnboardingAtom);
+	if (!onboarding) return [];
+
 	const margin = get(userMarginAtom);
 	const spotBalances = get(userSpotBalancesAtom);
 

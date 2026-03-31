@@ -9,7 +9,7 @@ import {
 	walletAddressAtom,
 } from '@/atoms/user/onboarding';
 import { useWalletSigner } from '@/hooks/use-wallet-signer';
-import { tradingWs } from '@/services/ws';
+
 import { safeParseFloat } from '@/lib/numbers';
 import {
 	orderSideAtom,
@@ -71,7 +71,7 @@ export function useOrderFormActions(): OrderFormActions {
 	const store = useStore();
 	const token = useAtomValue(activeTokenAtom);
 	const prevTokenRef = useRef(token);
-	const { sign } = useWalletSigner();
+	const { sign, signMessage } = useWalletSigner();
 
 	const setSideRaw = useSetAtom(orderSideAtom);
 	const setOrderTypeAtom = useSetAtom(orderTypeAtom);
@@ -321,14 +321,19 @@ export function useOrderFormActions(): OrderFormActions {
 		// If an onboarding step is pending, execute it instead of validating
 		const blocker = store.get(onboardingBlockerAtom);
 		if (blocker) {
-			store.set(isSubmittingAtom, true);
 			const onboarding = store.get(activeDexOnboardingAtom);
+			if (!onboarding) {
+				toast.error('Trading not available for this DEX');
+				return;
+			}
+			store.set(isSubmittingAtom, true);
 			const address = store.get(walletAddressAtom) ?? '';
 			try {
 				await onboarding.executeStep({
 					stepId: blocker.id,
 					walletAddress: address,
 					sign,
+					signMessage,
 				});
 				// Force onboarding atoms to recompute (localStorage changed)
 				store.set(onboardingVersionAtom, (prev) => prev + 1);
@@ -390,37 +395,37 @@ export function useOrderFormActions(): OrderFormActions {
 		}
 
 		// Place order via DEX exchange adapter
+		const exchange = store.get(activeDexExchangeAtom);
+		if (!exchange) {
+			toast.error('Trading not available for this DEX');
+			return;
+		}
+
 		store.set(isSubmittingAtom, true);
 		try {
 			const address = store.get(walletAddressAtom) ?? '';
-			store.get(activeDexExchangeAtom).setWalletAddress(address);
+			exchange.setWalletAddress(address);
 
-			const exchange = store.get(activeDexExchangeAtom);
 			const token = store.get(activeTokenAtom);
 			const slippageVal = store.get(slippageAtom);
 
-			const orderResult = await exchange.placeOrder(
-				{
-					coin: token,
-					side: side === 'long' ? 'buy' : 'sell',
-					type,
-					price:
-						type === 'market'
-							? mark
-							: safeParseFloat(store.get(limitPriceAtom)),
-					size: sizeInCoin,
-					reduceOnly,
-					slippage: slippageVal,
-					tif: type === 'market' ? 'Ioc' : 'Gtc',
-					tp: tpslEnabled
-						? safeParseFloat(store.get(tpPriceAtom)) || undefined
-						: undefined,
-					sl: tpslEnabled
-						? safeParseFloat(store.get(slPriceAtom)) || undefined
-						: undefined,
-				},
-				tradingWs,
-			);
+			const orderResult = await exchange.placeOrder({
+				coin: token,
+				side: side === 'long' ? 'buy' : 'sell',
+				type,
+				price:
+					type === 'market' ? mark : safeParseFloat(store.get(limitPriceAtom)),
+				size: sizeInCoin,
+				reduceOnly,
+				slippage: slippageVal,
+				tif: type === 'market' ? 'Ioc' : 'Gtc',
+				tp: tpslEnabled
+					? safeParseFloat(store.get(tpPriceAtom)) || undefined
+					: undefined,
+				sl: tpslEnabled
+					? safeParseFloat(store.get(slPriceAtom)) || undefined
+					: undefined,
+			});
 
 			if (orderResult.status === 'success') {
 				toast.success(orderResult.message ?? 'Order placed');

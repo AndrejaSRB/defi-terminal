@@ -19,12 +19,13 @@ export const SizeInput = memo(function SizeInput({
 	token,
 	szDecimals,
 }: SizeInputProps) {
+	const assetLabel = token.includes('-') ? token.split('-')[0] : token;
 	const denomOptions = useMemo(
 		() => [
-			{ value: 'coin' as const, label: token },
+			{ value: 'coin' as const, label: assetLabel },
 			{ value: 'usd' as const, label: 'USD' },
 		],
-		[token],
+		[assetLabel],
 	);
 
 	return (
@@ -42,7 +43,7 @@ export const SizeInput = memo(function SizeInput({
 			<NumberInput
 				value={value}
 				onValueChange={onChange}
-				suffix={denom === 'coin' ? token : 'USD'}
+				suffix={denom === 'coin' ? assetLabel : 'USD'}
 				placeholder="0.00"
 				maxDecimals={denom === 'coin' ? szDecimals : 2}
 			/>

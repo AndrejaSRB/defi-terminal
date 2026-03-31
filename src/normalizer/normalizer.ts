@@ -92,10 +92,17 @@ export interface TokenCategory {
 export interface DexNormalizer {
 	name: string;
 	wsUrl: string;
+	wsType: 'single' | 'multi-stream';
+	defaultToken: string;
+	orderBookDepth?: number;
+	hasMarginMode?: boolean;
 	depositConfig: DepositConfig;
 	withdrawConfig: WithdrawConfig;
 	tokenCategories: TokenCategory[];
 	getTokenImageUrl: (coin: string) => string;
+
+	/** For multi-stream: build the full WS URL for a channel. */
+	buildStreamUrl?: (baseUrl: string, descriptor: ChannelDescriptor) => string;
 
 	// Protocol helpers — assembled into ProtocolHooks by the WS service
 	deserialize: (data: unknown) => unknown;
@@ -113,10 +120,10 @@ export interface DexNormalizer {
 		prices: () => ChannelDescriptor;
 		orderBook: (coin: string, agg?: AggregationLevel) => ChannelDescriptor;
 		trades: (coin: string) => ChannelDescriptor;
-		activeAsset: (coin: string) => ChannelDescriptor;
+		activeAsset?: (coin: string) => ChannelDescriptor;
 		candles: (coin: string, interval: string) => ChannelDescriptor;
-		userPositions: (address: string) => ChannelDescriptor;
-		userOpenOrders: (address: string) => ChannelDescriptor;
+		userPositions?: (address: string) => ChannelDescriptor;
+		userOpenOrders?: (address: string) => ChannelDescriptor;
 		allAssetCtxs?: () => ChannelDescriptor;
 		userFills?: (address: string) => ChannelDescriptor;
 		userBalances?: (address: string) => ChannelDescriptor;
@@ -168,6 +175,19 @@ export interface DexNormalizer {
 		leverage: number;
 		sizeInCoin: number;
 	}) => number;
+
+	/**
+	 * Optional: stateful orderbook for DEXes that send SNAPSHOT + DELTA.
+	 * When present, the hook uses REST snapshot + WS deltas via accumulator.
+	 * When absent (e.g. HL), each WS message is treated as a full snapshot.
+	 */
+	createOrderBookAccumulator?: () => import('./orderbook-accumulator').OrderBookAccumulator;
+
+	/** Translate a raw WS message into accumulator applySnapshot/applyDelta calls. */
+	feedOrderBook?: (
+		raw: unknown,
+		accumulator: import('./orderbook-accumulator').OrderBookAccumulator,
+	) => void;
 
 	// REST snapshot fetchers
 	fetchOrderBook: (coin: string, agg?: AggregationLevel) => Promise<OrderBook>;

@@ -9,7 +9,6 @@ import type {
 	WithdrawParams,
 	WithdrawResult,
 } from '../exchange';
-import type { TradingWebSocket } from '@/services/websocket';
 import {
 	buildOrderAction,
 	buildCancelAction,
@@ -65,10 +64,7 @@ export const hyperliquidExchange: DexExchange = {
 		activeWalletAddress = address.toLowerCase();
 	},
 
-	async placeOrder(
-		params: PlaceOrderParams,
-		_ws: TradingWebSocket,
-	): Promise<OrderResult> {
+	async placeOrder(params: PlaceOrderParams): Promise<OrderResult> {
 		const agent = getValidAgent(activeWalletAddress);
 		const isMarket = params.type === 'market';
 		const formattedParams = {
@@ -117,10 +113,7 @@ export const hyperliquidExchange: DexExchange = {
 		return { status: 'success', message: 'Order submitted' };
 	},
 
-	async cancelOrder(
-		params: CancelOrderParams,
-		_ws: TradingWebSocket,
-	): Promise<void> {
+	async cancelOrder(params: CancelOrderParams): Promise<void> {
 		const agent = getValidAgent(activeWalletAddress);
 		const action = buildCancelAction([params]);
 		const nonce = Date.now();
@@ -132,10 +125,7 @@ export const hyperliquidExchange: DexExchange = {
 		await postExchange(signed);
 	},
 
-	async cancelOrders(
-		params: CancelOrderParams[],
-		_ws: TradingWebSocket,
-	): Promise<void> {
+	async cancelOrders(params: CancelOrderParams[]): Promise<void> {
 		const agent = getValidAgent(activeWalletAddress);
 		const action = buildCancelAction(params);
 		const nonce = Date.now();
@@ -147,10 +137,7 @@ export const hyperliquidExchange: DexExchange = {
 		await postExchange(signed);
 	},
 
-	async modifyOrder(
-		params: ModifyOrderParams,
-		_ws: TradingWebSocket,
-	): Promise<OrderResult> {
+	async modifyOrder(params: ModifyOrderParams): Promise<OrderResult> {
 		const agent = getValidAgent(activeWalletAddress);
 		const action = buildModifyAction({
 			...params,
@@ -167,28 +154,23 @@ export const hyperliquidExchange: DexExchange = {
 		return { status: 'success', message: 'Order modified' };
 	},
 
-	async closePosition(
-		params: { coin: string; size: number; side: 'buy' | 'sell' },
-		ws: TradingWebSocket,
-	): Promise<OrderResult> {
-		return this.placeOrder(
-			{
-				coin: params.coin,
-				side: params.side,
-				type: 'market',
-				price: 0,
-				size: params.size,
-				reduceOnly: true,
-				tif: 'Ioc',
-			},
-			ws,
-		);
+	async closePosition(params: {
+		coin: string;
+		size: number;
+		side: 'buy' | 'sell';
+	}): Promise<OrderResult> {
+		return this.placeOrder({
+			coin: params.coin,
+			side: params.side,
+			type: 'market',
+			price: 0,
+			size: params.size,
+			reduceOnly: true,
+			tif: 'Ioc',
+		});
 	},
 
-	async updateLeverage(
-		params: UpdateLeverageParams,
-		_ws: TradingWebSocket,
-	): Promise<void> {
+	async updateLeverage(params: UpdateLeverageParams): Promise<void> {
 		const agent = getValidAgent(activeWalletAddress);
 		const action = buildUpdateLeverageAction(params);
 		const nonce = Date.now();
@@ -200,17 +182,11 @@ export const hyperliquidExchange: DexExchange = {
 		await postExchange(signed);
 	},
 
-	async updateMarginMode(
-		params: UpdateLeverageParams,
-		_ws: TradingWebSocket,
-	): Promise<void> {
-		return this.updateLeverage(params, _ws);
+	async updateMarginMode(params: UpdateLeverageParams): Promise<void> {
+		return this.updateLeverage(params);
 	},
 
-	async setPositionTpSl(
-		params: SetPositionTpSlParams,
-		_ws: TradingWebSocket,
-	): Promise<void> {
+	async setPositionTpSl(params: SetPositionTpSlParams): Promise<void> {
 		const agent = getValidAgent(activeWalletAddress);
 		const formattedParams = {
 			...params,

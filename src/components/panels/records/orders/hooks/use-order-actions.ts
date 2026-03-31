@@ -8,7 +8,6 @@ import {
 	walletAddressAtom,
 	onboardingBlockerAtom,
 } from '@/atoms/user/onboarding';
-import { tradingWs } from '@/services/ws';
 
 export const isProcessingOrderAtom = atom<boolean>(false);
 
@@ -29,14 +28,19 @@ export function useOrderActions() {
 		async (orderId: number, coin: string) => {
 			if (!checkAgent()) return;
 			if (store.get(isProcessingOrderAtom)) return;
-			store.set(isProcessingOrderAtom, true);
 
+			const exchange = store.get(activeDexExchangeAtom);
+			if (!exchange) {
+				toast.error('Trading not available for this DEX');
+				return;
+			}
+
+			store.set(isProcessingOrderAtom, true);
 			const address = store.get(walletAddressAtom) ?? '';
-			store.get(activeDexExchangeAtom).setWalletAddress(address);
+			exchange.setWalletAddress(address);
 
 			try {
-				const exchange = store.get(activeDexExchangeAtom);
-				await exchange.cancelOrder({ coin, orderId }, tradingWs);
+				await exchange.cancelOrder({ coin, orderId });
 				toast.success('Order canceled');
 			} catch (error) {
 				toast.error(
@@ -52,19 +56,24 @@ export function useOrderActions() {
 	const cancelAllOrders = useCallback(async () => {
 		if (!checkAgent()) return;
 		if (store.get(isProcessingOrderAtom)) return;
-		store.set(isProcessingOrderAtom, true);
 
+		const exchange = store.get(activeDexExchangeAtom);
+		if (!exchange) {
+			toast.error('Trading not available for this DEX');
+			return;
+		}
+
+		store.set(isProcessingOrderAtom, true);
 		const address = store.get(walletAddressAtom) ?? '';
-		store.get(activeDexExchangeAtom).setWalletAddress(address);
+		exchange.setWalletAddress(address);
 
 		try {
-			const exchange = store.get(activeDexExchangeAtom);
 			const orders = store.get(userOpenOrdersAtom);
 			const cancels = orders.map((order) => ({
 				coin: order.coin,
 				orderId: Number(order.id),
 			}));
-			await exchange.cancelOrders(cancels, tradingWs);
+			await exchange.cancelOrders(cancels);
 			toast.success('All orders canceled');
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Cancel all failed');

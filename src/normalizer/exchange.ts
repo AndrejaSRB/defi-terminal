@@ -1,5 +1,3 @@
-import type { TradingWebSocket } from '@/services/websocket';
-
 // ── Canonical Order Types ───────────────────────────────────────────
 
 export interface PlaceOrderParams {
@@ -48,42 +46,25 @@ export interface DexExchange {
 	/** Set the active wallet address for signing operations */
 	setWalletAddress(address: string): void;
 
-	placeOrder(
-		params: PlaceOrderParams,
-		ws: TradingWebSocket,
-	): Promise<OrderResult>;
+	placeOrder(params: PlaceOrderParams): Promise<OrderResult>;
 
-	cancelOrder(params: CancelOrderParams, ws: TradingWebSocket): Promise<void>;
+	cancelOrder(params: CancelOrderParams): Promise<void>;
 
-	cancelOrders(
-		params: CancelOrderParams[],
-		ws: TradingWebSocket,
-	): Promise<void>;
+	cancelOrders(params: CancelOrderParams[]): Promise<void>;
 
-	modifyOrder(
-		params: ModifyOrderParams,
-		ws: TradingWebSocket,
-	): Promise<OrderResult>;
+	modifyOrder(params: ModifyOrderParams): Promise<OrderResult>;
 
-	closePosition(
-		params: { coin: string; size: number; side: 'buy' | 'sell' },
-		ws: TradingWebSocket,
-	): Promise<OrderResult>;
+	closePosition(params: {
+		coin: string;
+		size: number;
+		side: 'buy' | 'sell';
+	}): Promise<OrderResult>;
 
-	updateLeverage(
-		params: UpdateLeverageParams,
-		ws: TradingWebSocket,
-	): Promise<void>;
+	updateLeverage(params: UpdateLeverageParams): Promise<void>;
 
-	updateMarginMode(
-		params: UpdateLeverageParams,
-		ws: TradingWebSocket,
-	): Promise<void>;
+	updateMarginMode(params: UpdateLeverageParams): Promise<void>;
 
-	setPositionTpSl(
-		params: SetPositionTpSlParams,
-		ws: TradingWebSocket,
-	): Promise<void>;
+	setPositionTpSl(params: SetPositionTpSlParams): Promise<void>;
 
 	withdraw(params: WithdrawParams): Promise<WithdrawResult>;
 }

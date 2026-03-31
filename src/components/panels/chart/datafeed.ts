@@ -15,7 +15,7 @@ import type {
 } from '@charting_library/datafeed-api';
 import type { Candle } from '@/normalizer/types';
 import type { DexNormalizer } from '@/normalizer/normalizer';
-import type { TradingWebSocket } from '@/services/websocket';
+import type { TradingWsClient } from '@/services/websocket/shared';
 import {
 	SUPPORTED_RESOLUTIONS,
 	tvResolutionToHlInterval,
@@ -25,8 +25,9 @@ function parseAndTrack(
 	raw: unknown,
 	normalizer: DexNormalizer,
 	trackTime: (time: number) => void,
-): Bar {
+): Bar | null {
 	const candle: Candle = normalizer.parseCandle(raw);
+	if (!candle.time) return null;
 	trackTime(candle.time);
 	return candle;
 }
@@ -46,7 +47,7 @@ export interface DatafeedWithDispose {
 
 export function createDatafeed(
 	normalizer: DexNormalizer,
-	ws: TradingWebSocket,
+	ws: TradingWsClient,
 	getPrice: (coin: string) => number,
 ): DatafeedWithDispose {
 	const subscriptions = new Map<string, () => void>();
@@ -158,7 +159,7 @@ export function createDatafeed(
 				const bar = parseAndTrack(raw, normalizer, (t) => {
 					lastBarTime = Math.max(lastBarTime, t);
 				});
-				onTick(bar);
+				if (bar) onTick(bar);
 			});
 
 			subscriptions.set(listenerGuid, unsub);
@@ -222,7 +223,7 @@ export function createDatafeed(
 						const bar = parseAndTrack(raw, normalizer, (t) => {
 							lastBarTime = Math.max(lastBarTime, t);
 						});
-						onTick(bar);
+						if (bar) onTick(bar);
 					}
 				}
 				gapFillInProgress = false;

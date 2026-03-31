@@ -1,4 +1,5 @@
 export type SignTransactionFn = (data: unknown) => Promise<string>;
+export type SignMessageFn = (message: string) => Promise<string>;
 
 export interface OnboardingStep {
 	id: string;
@@ -15,6 +16,8 @@ export interface ExecuteStepParams {
 	stepId: string;
 	walletAddress: string;
 	sign: SignTransactionFn;
+	/** EIP-191 personal sign — needed by DEXes that require it (e.g. Extended API key) */
+	signMessage?: SignMessageFn;
 }
 
 export interface DexOnboarding {

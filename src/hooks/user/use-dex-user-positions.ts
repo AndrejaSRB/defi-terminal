@@ -11,7 +11,7 @@ export function useDexUserPositions() {
 	const setPositions = useSetAtom(userPositionsAtom);
 
 	useEffect(() => {
-		if (!walletAddress) {
+		if (!walletAddress || !normalizer.channels.userPositions) {
 			setPositions([]);
 			return;
 		}

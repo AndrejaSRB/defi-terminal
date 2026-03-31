@@ -7,7 +7,7 @@ import {
 	walletAddressAtom,
 	onboardingBlockerAtom,
 } from '@/atoms/user/onboarding';
-import { tradingWs } from '@/services/ws';
+
 import { activeMetaAtom } from '../atoms/order-form-derived';
 import { leverageAtom, marginModeAtom } from '../atoms/order-form-atoms';
 import {
@@ -71,20 +71,21 @@ export const LeverageDialog = memo(function LeverageDialog({
 	const handleConfirm = useCallback(async () => {
 		const blocker = store.get(onboardingBlockerAtom);
 		if (!blocker) {
+			const exchange = store.get(activeDexExchangeAtom);
+			if (!exchange) {
+				toast.error('Trading not available for this DEX');
+				return;
+			}
 			setIsConfirming(true);
 			const address = store.get(walletAddressAtom) ?? '';
-			store.get(activeDexExchangeAtom).setWalletAddress(address);
+			exchange.setWalletAddress(address);
 			const mode = store.get(marginModeAtom);
 			try {
-				const exchange = store.get(activeDexExchangeAtom);
-				await exchange.updateLeverage(
-					{
-						coin: token,
-						leverage: localValue,
-						isCross: mode === 'cross',
-					},
-					tradingWs,
-				);
+				await exchange.updateLeverage({
+					coin: token,
+					leverage: localValue,
+					isCross: mode === 'cross',
+				});
 				toast.success(`Leverage updated to ${localValue}x`);
 			} catch (error) {
 				toast.error(

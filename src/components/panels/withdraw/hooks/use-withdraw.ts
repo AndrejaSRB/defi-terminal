@@ -42,6 +42,10 @@ export function useWithdraw() {
 
 	const handleWithdraw = useCallback(async () => {
 		if (!isValidAmount || !effectiveDestination) return;
+		if (!exchange) {
+			toast.error('Trading not available for this DEX');
+			return;
+		}
 
 		setIsWithdrawing(true);
 		try {

@@ -7,7 +7,7 @@ import {
 	walletAddressAtom,
 	onboardingBlockerAtom,
 } from '@/atoms/user/onboarding';
-import { tradingWs } from '@/services/ws';
+
 import { cn } from '@/lib/utils';
 import {
 	Dialog,
@@ -61,20 +61,21 @@ export const MarginModeDialog = memo(function MarginModeDialog({
 	const handleConfirm = useCallback(async () => {
 		const blocker = store.get(onboardingBlockerAtom);
 		if (!blocker) {
+			const exchange = store.get(activeDexExchangeAtom);
+			if (!exchange) {
+				toast.error('Trading not available for this DEX');
+				return;
+			}
 			setIsConfirming(true);
 			const address = store.get(walletAddressAtom) ?? '';
-			store.get(activeDexExchangeAtom).setWalletAddress(address);
+			exchange.setWalletAddress(address);
 			const leverage = store.get(leverageAtom);
 			try {
-				const exchange = store.get(activeDexExchangeAtom);
-				await exchange.updateMarginMode(
-					{
-						coin: token,
-						leverage,
-						isCross: currentMode === 'cross',
-					},
-					tradingWs,
-				);
+				await exchange.updateMarginMode({
+					coin: token,
+					leverage,
+					isCross: currentMode === 'cross',
+				});
 				toast.success(`Margin mode set to ${currentMode}`);
 			} catch (error) {
 				toast.error(

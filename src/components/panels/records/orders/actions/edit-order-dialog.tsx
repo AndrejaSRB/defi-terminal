@@ -3,7 +3,7 @@ import { useAtomValue, useStore } from 'jotai';
 import { toast } from 'sonner';
 import { activeDexExchangeAtom, activeNormalizerAtom } from '@/atoms/dex';
 import { walletAddressAtom } from '@/atoms/user/onboarding';
-import { tradingWs } from '@/services/ws';
+
 import { safeParseFloat } from '@/lib/numbers';
 import {
 	Dialog,
@@ -48,23 +48,25 @@ export const EditOrderDialog = memo(function EditOrderDialog({
 
 	const handleConfirm = useCallback(async () => {
 		if (!order || isSubmitting) return;
-		setIsSubmitting(true);
 
+		const exchange = store.get(activeDexExchangeAtom);
+		if (!exchange) {
+			toast.error('Trading not available for this DEX');
+			return;
+		}
+
+		setIsSubmitting(true);
 		const address = store.get(walletAddressAtom) ?? '';
-		store.get(activeDexExchangeAtom).setWalletAddress(address);
+		exchange.setWalletAddress(address);
 
 		try {
-			const exchange = store.get(activeDexExchangeAtom);
-			await exchange.modifyOrder(
-				{
-					coin,
-					orderId: order.rawOrderId,
-					price: safeParseFloat(price),
-					size: safeParseFloat(size),
-					reduceOnly: order.reduceOnly === 'Yes',
-				},
-				tradingWs,
-			);
+			await exchange.modifyOrder({
+				coin,
+				orderId: order.rawOrderId,
+				price: safeParseFloat(price),
+				size: safeParseFloat(size),
+				reduceOnly: order.reduceOnly === 'Yes',
+			});
 			toast.success('Order modified');
 			onOpenChange(false);
 		} catch (error) {

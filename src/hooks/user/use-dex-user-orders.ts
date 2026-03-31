@@ -11,7 +11,7 @@ export function useDexUserOrders() {
 	const setOrders = useSetAtom(userOpenOrdersAtom);
 
 	useEffect(() => {
-		if (!walletAddress) {
+		if (!walletAddress || !normalizer.channels.userOpenOrders) {
 			setOrders([]);
 			return;
 		}

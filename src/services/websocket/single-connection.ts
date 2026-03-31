@@ -1,10 +1,12 @@
 import type { ChannelDescriptor, ProtocolHooks } from '@/normalizer/normalizer';
+import type {
+	ConnectionState,
+	DataCallback,
+	StateListener,
+	WebSocketConfig,
+} from './shared';
 
-type Callback = (data: unknown) => void;
-
-interface ConnectionConfig {
-	url: string;
-	protocol: ProtocolHooks;
+interface ConnectionConfig extends WebSocketConfig {
 	maxReconnectAttempts?: number;
 	heartbeatInterval?: number;
 	pongTimeout?: number;
@@ -21,14 +23,6 @@ const DEFAULTS = {
 	maxSendQueueSize: 100,
 	cacheEvictionDelay: 15_000,
 } as const;
-
-type ConnectionState =
-	| 'disconnected'
-	| 'connecting'
-	| 'connected'
-	| 'reconnecting';
-
-type StateListener = (state: ConnectionState) => void;
 
 export interface WebSocketMetrics {
 	connectedAt: number | null;
@@ -56,7 +50,7 @@ class TradingWebSocket {
 	private connectLock = false;
 
 	// Subscribers: channelKey → Set<callbacks>
-	private subscribers = new Map<string, Set<Callback>>();
+	private subscribers = new Map<string, Set<DataCallback>>();
 	private lastMessages = new Map<string, unknown>();
 	private channelDescriptors = new Map<string, ChannelDescriptor>();
 
@@ -213,7 +207,7 @@ class TradingWebSocket {
 		});
 	}
 
-	subscribe(descriptor: ChannelDescriptor, callback: Callback): () => void {
+	subscribe(descriptor: ChannelDescriptor, callback: DataCallback): () => void {
 		const key = this.protocol.channelKey(descriptor);
 
 		// Cancel any pending cache eviction for this channel
@@ -346,7 +340,7 @@ class TradingWebSocket {
 
 	// ── PRIVATE: Subscription Management ─────────────────────────────
 
-	private unsubscribe(key: string, callback: Callback) {
+	private unsubscribe(key: string, callback: DataCallback) {
 		const callbacks = this.subscribers.get(key);
 		if (!callbacks) return;
 

@@ -1,3 +1,5 @@
+import { useAtomValue } from 'jotai';
+import { activeNormalizerAtom } from '@/atoms/dex';
 import { useOrderFormData } from './hooks/use-order-form-data';
 import { useOrderFormActions } from './hooks/use-order-form-actions';
 import { MarginModeButton } from './fields/margin-mode-button';
@@ -17,6 +19,7 @@ import { OrderInfoFooter } from './fields/order-info-footer';
 import { OrderFormSkeleton } from './order-form-skeleton';
 
 export function OrderFormContent() {
+	const normalizer = useAtomValue(activeNormalizerAtom);
 	const data = useOrderFormData();
 	const actions = useOrderFormActions();
 
@@ -28,7 +31,7 @@ export function OrderFormContent() {
 		<div className="flex h-full flex-col gap-3 overflow-y-auto p-3">
 			{/* Margin Mode + Leverage */}
 			<div className="flex gap-2">
-				<MarginModeButton />
+				{normalizer.hasMarginMode && <MarginModeButton />}
 				<LeverageButton />
 			</div>
 

@@ -4,8 +4,38 @@ import { activeTokenAtom } from '@/atoms/active-token';
 import { activeNormalizerAtom } from '@/atoms/dex';
 import { orderBookByTokenAtom } from '@/atoms/market-data/orderbook';
 import { denominationAtom } from '@/atoms/market-data/denomination';
+import { activeAggregationAtom } from '@/atoms/market-data/aggregation';
+import type { OrderBookLevel } from '@/normalizer/types';
 
 const NO_DOLLAR = { hasDollarSign: false };
+
+/**
+ * Client-side price aggregation for DEXes that send raw orderbooks.
+ * Buckets levels by tickSize, summing sizes per bucket.
+ */
+function aggregateLevels(
+	levels: OrderBookLevel[],
+	tickSize: number,
+	order: 'asc' | 'desc',
+): OrderBookLevel[] {
+	if (tickSize <= 0) return levels;
+
+	const buckets = new Map<number, number>();
+	for (const level of levels) {
+		// Floor for both sides — matches Extended's aggregation behavior
+		const bucketed = Math.floor(level.price / tickSize) * tickSize;
+		buckets.set(bucketed, (buckets.get(bucketed) ?? 0) + level.size);
+	}
+
+	const result: OrderBookLevel[] = [];
+	for (const [price, size] of buckets) {
+		result.push({ price, size });
+	}
+
+	return order === 'desc'
+		? result.sort((levelA, levelB) => levelB.price - levelA.price)
+		: result.sort((levelA, levelB) => levelA.price - levelB.price);
+}
 
 export interface FormattedLevel {
 	price: string;
@@ -16,16 +46,25 @@ export interface FormattedLevel {
 	side: 'bid' | 'ask';
 }
 
-export function useOrderbookData(maxLevels = 20) {
+export function useOrderbookData() {
 	const token = useAtomValue(activeTokenAtom);
 	const normalizer = useAtomValue(activeNormalizerAtom);
 	const { status, data: book } = useAtomValue(orderBookByTokenAtom(token));
 	const denom = useAtomValue(denominationAtom);
+	const agg = useAtomValue(activeAggregationAtom);
 	const isUsd = denom === 'usd';
+	const maxLevels = normalizer.orderBookDepth ?? 20;
 
 	return useMemo(() => {
-		const asks = book.asks.slice(0, maxLevels);
-		const bids = book.bids.slice(0, maxLevels);
+		// Client-side aggregation for DEXes with raw orderbooks (Extended).
+		// HL uses server-side aggregation so tickSize check is skipped.
+		const needsClientAgg = agg && agg.tickSize > 0 && agg.nSigFigs === null;
+		const asks = needsClientAgg
+			? aggregateLevels(book.asks, agg.tickSize, 'asc').slice(0, maxLevels)
+			: book.asks.slice(0, maxLevels);
+		const bids = needsClientAgg
+			? aggregateLevels(book.bids, agg.tickSize, 'desc').slice(0, maxLevels)
+			: book.bids.slice(0, maxLevels);
 
 		const formatSize = (size: number, price: number) => {
 			if (isUsd) {
@@ -117,6 +156,7 @@ export function useOrderbookData(maxLevels = 20) {
 				percentage: spreadValue > 0 ? `${spreadPct.toFixed(3)}%` : '--',
 			},
 			isLoading: status !== 'live',
+			maxLevels,
 		};
-	}, [book, token, normalizer, status, maxLevels, isUsd]);
+	}, [book, token, normalizer, status, maxLevels, isUsd, agg]);
 }

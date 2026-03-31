@@ -8,12 +8,14 @@ import { ViewToggle } from './view-toggle';
 import { OrderBookRow } from './orderbook-row';
 import { OrderBookSkeleton } from './orderbook-skeleton';
 
-const MAX_ROWS_PER_SIDE = 11;
 const MIN_ROW_HEIGHT = 22;
 const ROW_GAP = 2;
 
-function useVisibleRows(ref: React.RefObject<HTMLDivElement | null>) {
-	const [count, setCount] = useState(MAX_ROWS_PER_SIDE);
+function useVisibleRows(
+	ref: React.RefObject<HTMLDivElement | null>,
+	maxRows: number,
+) {
+	const [count, setCount] = useState(maxRows);
 
 	const measure = useCallback(() => {
 		if (!ref.current) return;
@@ -21,8 +23,8 @@ function useVisibleRows(ref: React.RefObject<HTMLDivElement | null>) {
 		const fitCount = Math.floor(
 			(height + ROW_GAP) / (MIN_ROW_HEIGHT + ROW_GAP),
 		);
-		setCount(Math.min(Math.max(fitCount, 0), MAX_ROWS_PER_SIDE));
-	}, [ref]);
+		setCount(Math.min(Math.max(fitCount, 0), maxRows));
+	}, [ref, maxRows]);
 
 	useEffect(() => {
 		measure();
@@ -35,12 +37,12 @@ function useVisibleRows(ref: React.RefObject<HTMLDivElement | null>) {
 }
 
 export function OrderBookContent() {
-	const { asks, bids, spread, isLoading } = useOrderbookData(MAX_ROWS_PER_SIDE);
+	const { asks, bids, spread, isLoading, maxLevels } = useOrderbookData();
 	const { view, setView } = useOrderbookView();
 	const asksRef = useRef<HTMLDivElement>(null);
 	const bidsRef = useRef<HTMLDivElement>(null);
-	const asksCount = useVisibleRows(asksRef);
-	const bidsCount = useVisibleRows(bidsRef);
+	const asksCount = useVisibleRows(asksRef, maxLevels);
+	const bidsCount = useVisibleRows(bidsRef, maxLevels);
 
 	if (isLoading) {
 		return <OrderBookSkeleton />;

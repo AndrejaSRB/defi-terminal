@@ -2,6 +2,7 @@ import { atom } from 'jotai';
 import { safeParseFloat } from '@/lib/numbers';
 import { activeTokenAtom } from '@/atoms/active-token';
 import { activeAssetDataAtom } from '@/atoms/active-asset';
+import { allAssetCtxsAtom } from '@/atoms/all-asset-ctxs';
 import { assetMetaAtom } from '@/atoms/asset-meta';
 import { activeNormalizerAtom } from '@/atoms/dex';
 import { pricesAtom } from '@/atoms/prices';
@@ -64,7 +65,15 @@ export const activeMetaAtom = atom((get) => {
 
 export const markPriceAtom = atom((get) => {
 	const data = get(activeAssetDataAtom);
-	return data ? safeParseFloat(data.markPrice) : 0;
+	if (data) return safeParseFloat(data.markPrice);
+
+	// Fallback for DEXes without per-token activeAsset WS (e.g. Extended)
+	const token = get(activeTokenAtom);
+	const prices = get(pricesAtom);
+	if (prices[token]) return safeParseFloat(prices[token]);
+
+	const ctx = get(allAssetCtxsAtom).get(token);
+	return ctx ? safeParseFloat(ctx.markPrice) : 0;
 });
 
 // Fast mid price from allMids WS (ticks more frequently than activeAssetCtx)

@@ -182,6 +182,10 @@ function parseWsCandle(
 export const hyperliquidNormalizer: DexNormalizer = {
 	name: 'HyperLiquid',
 	wsUrl: 'wss://api.hyperliquid.xyz/ws',
+	wsType: 'single',
+	defaultToken: 'BTC',
+	orderBookDepth: 11,
+	hasMarginMode: true,
 	depositConfig: {
 		chainId: 42161,
 		tokenAddress: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',

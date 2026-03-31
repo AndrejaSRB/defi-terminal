@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { activeDexExchangeAtom } from '@/atoms/dex';
 import { pricesAtom } from '@/atoms/prices';
 import { walletAddressAtom } from '@/atoms/user/onboarding';
-import { tradingWs } from '@/services/ws';
+
 import { safeParseFloat } from '@/lib/numbers';
 import {
 	Dialog,
@@ -60,27 +60,29 @@ export const LimitCloseDialog = memo(function LimitCloseDialog() {
 
 	const handleConfirm = useCallback(async () => {
 		if (isClosing || !action) return;
-		setIsClosing(true);
 
+		const exchange = store.get(activeDexExchangeAtom);
+		if (!exchange) {
+			toast.error('Trading not available for this DEX');
+			return;
+		}
+
+		setIsClosing(true);
 		const address = store.get(walletAddressAtom) ?? '';
-		store.get(activeDexExchangeAtom).setWalletAddress(address);
+		exchange.setWalletAddress(address);
 
 		try {
-			const exchange = store.get(activeDexExchangeAtom);
 			const closeSide = side === 'LONG' ? 'sell' : 'buy';
 
-			const result = await exchange.placeOrder(
-				{
-					coin,
-					side: closeSide as 'buy' | 'sell',
-					type: 'limit',
-					price: safeParseFloat(price),
-					size,
-					reduceOnly: true,
-					tif: 'Gtc',
-				},
-				tradingWs,
-			);
+			const result = await exchange.placeOrder({
+				coin,
+				side: closeSide as 'buy' | 'sell',
+				type: 'limit',
+				price: safeParseFloat(price),
+				size,
+				reduceOnly: true,
+				tif: 'Gtc',
+			});
 
 			if (result.status === 'success') {
 				toast.success('Limit close order placed');

@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { activeDexExchangeAtom, activeNormalizerAtom } from '@/atoms/dex';
 import { pricesAtom } from '@/atoms/prices';
 import { walletAddressAtom } from '@/atoms/user/onboarding';
-import { tradingWs } from '@/services/ws';
+
 import { safeParseFloat } from '@/lib/numbers';
 import {
 	Dialog,
@@ -144,12 +144,16 @@ export const TpslEditDialog = memo(function TpslEditDialog() {
 
 	const handleCancelTp = useCallback(async () => {
 		if (!existingTpId || isClosing) return;
+		const exchange = store.get(activeDexExchangeAtom);
+		if (!exchange) {
+			toast.error('Trading not available for this DEX');
+			return;
+		}
 		setIsClosing(true);
 		const address = store.get(walletAddressAtom) ?? '';
-		store.get(activeDexExchangeAtom).setWalletAddress(address);
+		exchange.setWalletAddress(address);
 		try {
-			const exchange = store.get(activeDexExchangeAtom);
-			await exchange.cancelOrder({ coin, orderId: existingTpId }, tradingWs);
+			await exchange.cancelOrder({ coin, orderId: existingTpId });
 			setCanceledTp(true);
 			toast.success('Take Profit canceled');
 		} catch (error) {
@@ -161,12 +165,16 @@ export const TpslEditDialog = memo(function TpslEditDialog() {
 
 	const handleCancelSl = useCallback(async () => {
 		if (!existingSLId || isClosing) return;
+		const exchange = store.get(activeDexExchangeAtom);
+		if (!exchange) {
+			toast.error('Trading not available for this DEX');
+			return;
+		}
 		setIsClosing(true);
 		const address = store.get(walletAddressAtom) ?? '';
-		store.get(activeDexExchangeAtom).setWalletAddress(address);
+		exchange.setWalletAddress(address);
 		try {
-			const exchange = store.get(activeDexExchangeAtom);
-			await exchange.cancelOrder({ coin, orderId: existingSLId }, tradingWs);
+			await exchange.cancelOrder({ coin, orderId: existingSLId });
 			setCanceledSl(true);
 			toast.success('Stop Loss canceled');
 		} catch (error) {
@@ -183,23 +191,24 @@ export const TpslEditDialog = memo(function TpslEditDialog() {
 			return;
 		}
 
+		const exchange = store.get(activeDexExchangeAtom);
+		if (!exchange) {
+			toast.error('Trading not available for this DEX');
+			return;
+		}
+
 		setIsClosing(true);
 		const address = store.get(walletAddressAtom) ?? '';
-		store.get(activeDexExchangeAtom).setWalletAddress(address);
+		exchange.setWalletAddress(address);
 
 		try {
-			const exchange = store.get(activeDexExchangeAtom);
-
-			await exchange.setPositionTpSl(
-				{
-					coin,
-					side,
-					size,
-					tp: tpPriceNum > 0 ? tpPriceNum : undefined,
-					sl: slPriceNum > 0 ? slPriceNum : undefined,
-				},
-				tradingWs,
-			);
+			await exchange.setPositionTpSl({
+				coin,
+				side,
+				size,
+				tp: tpPriceNum > 0 ? tpPriceNum : undefined,
+				sl: slPriceNum > 0 ? slPriceNum : undefined,
+			});
 
 			toast.success('TP/SL set for position');
 			setAction(null);

@@ -8,7 +8,7 @@ import {
 	walletAddressAtom,
 	onboardingBlockerAtom,
 } from '@/atoms/user/onboarding';
-import { tradingWs } from '@/services/ws';
+
 import { safeParseFloat } from '@/lib/numbers';
 import type { FormattedPosition } from './use-positions-data';
 import {
@@ -55,30 +55,32 @@ export function usePositionActions() {
 		async (data: PositionActionData) => {
 			if (!checkAgent()) return;
 			if (store.get(isClosingPositionAtom)) return;
-			setIsClosing(true);
 
+			const exchange = store.get(activeDexExchangeAtom);
+			if (!exchange) {
+				toast.error('Trading not available for this DEX');
+				return;
+			}
+
+			setIsClosing(true);
 			const address = store.get(walletAddressAtom) ?? '';
-			store.get(activeDexExchangeAtom).setWalletAddress(address);
+			exchange.setWalletAddress(address);
 
 			try {
-				const exchange = store.get(activeDexExchangeAtom);
 				const prices = store.get(pricesAtom);
 				const markPrice = safeParseFloat(prices[data.coin]);
 				// Close side is opposite of position side
 				const closeSide = data.side === 'LONG' ? 'sell' : 'buy';
 
-				const result = await exchange.placeOrder(
-					{
-						coin: data.coin,
-						side: closeSide,
-						type: 'market',
-						price: markPrice,
-						size: data.size,
-						reduceOnly: true,
-						tif: 'Ioc',
-					},
-					tradingWs,
-				);
+				const result = await exchange.placeOrder({
+					coin: data.coin,
+					side: closeSide,
+					type: 'market',
+					price: markPrice,
+					size: data.size,
+					reduceOnly: true,
+					tif: 'Ioc',
+				});
 
 				if (result.status === 'success') {
 					toast.success(`Position closed: ${data.coin}`);
@@ -123,29 +125,31 @@ export function usePositionActions() {
 	const executeReverse = useCallback(async () => {
 		const data = store.get(activePositionActionAtom);
 		if (!data || store.get(isClosingPositionAtom)) return;
-		setIsClosing(true);
 
+		const exchange = store.get(activeDexExchangeAtom);
+		if (!exchange) {
+			toast.error('Trading not available for this DEX');
+			return;
+		}
+
+		setIsClosing(true);
 		const address = store.get(walletAddressAtom) ?? '';
-		store.get(activeDexExchangeAtom).setWalletAddress(address);
+		exchange.setWalletAddress(address);
 
 		try {
-			const exchange = store.get(activeDexExchangeAtom);
 			const prices = store.get(pricesAtom);
 			const markPrice = safeParseFloat(prices[data.coin]);
 			const reverseSide = data.side === 'LONG' ? 'sell' : 'buy';
 
-			const result = await exchange.placeOrder(
-				{
-					coin: data.coin,
-					side: reverseSide as 'buy' | 'sell',
-					type: 'market',
-					price: markPrice,
-					size: data.size * 2,
-					reduceOnly: false,
-					tif: 'Ioc',
-				},
-				tradingWs,
-			);
+			const result = await exchange.placeOrder({
+				coin: data.coin,
+				side: reverseSide as 'buy' | 'sell',
+				type: 'market',
+				price: markPrice,
+				size: data.size * 2,
+				reduceOnly: false,
+				tif: 'Ioc',
+			});
 
 			if (result.status === 'success') {
 				toast.success(`Position reversed: ${data.coin}`);
@@ -189,13 +193,18 @@ export function usePositionActions() {
 	const closeAllPositions = useCallback(async () => {
 		if (!checkAgent()) return;
 		if (store.get(isClosingPositionAtom)) return;
-		setIsClosing(true);
 
+		const exchange = store.get(activeDexExchangeAtom);
+		if (!exchange) {
+			toast.error('Trading not available for this DEX');
+			return;
+		}
+
+		setIsClosing(true);
 		const address = store.get(walletAddressAtom) ?? '';
-		store.get(activeDexExchangeAtom).setWalletAddress(address);
+		exchange.setWalletAddress(address);
 
 		try {
-			const exchange = store.get(activeDexExchangeAtom);
 			const positions = store.get(userPositionsAtom);
 			const prices = store.get(pricesAtom);
 
@@ -205,18 +214,15 @@ export function usePositionActions() {
 					const markPrice = safeParseFloat(prices[position.coin]);
 					const closeSide = position.side === 'LONG' ? 'sell' : 'buy';
 
-					return exchange.placeOrder(
-						{
-							coin: position.coin,
-							side: closeSide as 'buy' | 'sell',
-							type: 'market',
-							price: markPrice,
-							size,
-							reduceOnly: true,
-							tif: 'Ioc',
-						},
-						tradingWs,
-					);
+					return exchange.placeOrder({
+						coin: position.coin,
+						side: closeSide as 'buy' | 'sell',
+						type: 'market',
+						price: markPrice,
+						size,
+						reduceOnly: true,
+						tif: 'Ioc',
+					});
 				}),
 			);
 
