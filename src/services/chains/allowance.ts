@@ -18,7 +18,7 @@ export async function checkAllowance(
 
 	const client = createPublicClient({
 		chain: chainConfig.viemChain,
-		transport: http(),
+		transport: http(chainConfig.rpcUrl),
 	});
 
 	return client.readContract({
@@ -39,7 +39,7 @@ export async function readTokenBalance(
 
 	const client = createPublicClient({
 		chain: chainConfig.viemChain,
-		transport: http(),
+		transport: http(chainConfig.rpcUrl),
 	});
 
 	return client.readContract({

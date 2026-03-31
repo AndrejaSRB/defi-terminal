@@ -1,6 +1,12 @@
 import { useCallback, useState } from 'react';
 import { useAtomValue } from 'jotai';
-import { Wallet, ArrowLeftRight, CreditCard, ArrowLeft } from 'lucide-react';
+import {
+	Wallet,
+	ArrowLeftRight,
+	CreditCard,
+	ArrowLeft,
+	Coins,
+} from 'lucide-react';
 import { useFundWallet } from '@privy-io/react-auth';
 import {
 	Dialog,
@@ -16,8 +22,9 @@ import { getChainName } from '@/services/chains/config';
 import { useDepositBalance } from './hooks/use-deposit-balance';
 import DepositTab from './deposit-tab';
 import CrosschainTab from './crosschain-tab';
+import ExtendedDeposit from './extended/extended-deposit';
 
-type DepositView = 'select' | 'deposit' | 'crosschain';
+type DepositView = 'select' | 'deposit' | 'crosschain' | 'bridge-usdc';
 
 interface DepositDialogProps {
 	open: boolean;
@@ -32,10 +39,9 @@ export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
 	const { fundWallet } = useFundWallet();
 
 	const { depositConfig } = normalizer;
+	const methods = depositConfig.methods;
 	const chainName = getChainName(depositConfig.chainId);
 
-	const openDeposit = useCallback(() => setView('deposit'), []);
-	const openCrosschain = useCallback(() => setView('crosschain'), []);
 	const goBack = useCallback(() => setView('select'), []);
 
 	const handleBuyWithCard = useCallback(async () => {
@@ -59,10 +65,16 @@ export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
 		? '...'
 		: `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+	const viewTitles: Record<DepositView, string> = {
+		select: 'Deposit',
+		deposit: `Deposit ${depositConfig.tokenSymbol}`,
+		crosschain: 'Transfer Crypto',
+		'bridge-usdc': 'Deposit USDC',
+	};
+
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
 			<DialogContent className="max-w-md" preventOutsideClose>
-				{/* Header with back button for sub-views */}
 				<DialogHeader className="text-left">
 					<div className="flex items-center gap-2">
 						{view !== 'select' && (
@@ -75,11 +87,7 @@ export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
 							</button>
 						)}
 						<div>
-							<DialogTitle>
-								{view === 'select' && 'Deposit'}
-								{view === 'deposit' && `Deposit ${depositConfig.tokenSymbol}`}
-								{view === 'crosschain' && 'Transfer Crypto'}
-							</DialogTitle>
+							<DialogTitle>{viewTitles[view]}</DialogTitle>
 							{view === 'select' && (
 								<DialogDescription>
 									Choose how to fund your trading account.
@@ -92,82 +100,86 @@ export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
 				{/* Method selector */}
 				{view === 'select' && (
 					<div className="space-y-2">
-						{/* Native deposit */}
-						<button
-							type="button"
-							onClick={openDeposit}
-							className={cn(
-								'flex w-full items-center gap-3 rounded-lg border border-border p-4 text-left transition-colors',
-								'hover:border-primary/50 hover:bg-muted/30',
-							)}
-						>
-							<div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-								<Wallet className="size-5" />
-							</div>
-							<div className="flex-1">
-								<p className="text-sm font-medium text-foreground">
-									{depositConfig.tokenSymbol} on {chainName}
-								</p>
-								<p className="text-xs text-muted-foreground">
-									{balanceDisplay} · Instant
-								</p>
-							</div>
-						</button>
+						{/* Native deposit — HL only */}
+						{methods.includes('native') && (
+							<MethodButton
+								icon={<Wallet className="size-5" />}
+								title={`${depositConfig.tokenSymbol} on ${chainName}`}
+								subtitle={`${balanceDisplay} · Instant`}
+								onClick={() => setView('deposit')}
+							/>
+						)}
 
-						{/* Cross-chain bridge */}
-						<button
-							type="button"
-							onClick={openCrosschain}
-							className={cn(
-								'flex w-full items-center gap-3 rounded-lg border border-border p-4 text-left transition-colors',
-								'hover:border-primary/50 hover:bg-muted/30',
-							)}
-						>
-							<div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-								<ArrowLeftRight className="size-5" />
-							</div>
-							<div className="flex-1">
-								<p className="text-sm font-medium text-foreground">
-									Transfer Crypto
-								</p>
-								<p className="text-xs text-muted-foreground">
-									Any chain · 1-5 min
-								</p>
-							</div>
-						</button>
+						{/* Cross-chain — HL only (LI.FI) */}
+						{methods.includes('cross-chain') && (
+							<MethodButton
+								icon={<ArrowLeftRight className="size-5" />}
+								title="Transfer Crypto"
+								subtitle="Any chain · 1-5 min"
+								onClick={() => setView('crosschain')}
+							/>
+						)}
 
-						{/* Buy with card */}
-						<button
-							type="button"
-							onClick={handleBuyWithCard}
-							className={cn(
-								'flex w-full items-center gap-3 rounded-lg border border-border p-4 text-left transition-colors',
-								'hover:border-primary/50 hover:bg-muted/30',
-							)}
-						>
-							<div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-								<CreditCard className="size-5" />
-							</div>
-							<div className="flex-1">
-								<p className="text-sm font-medium text-foreground">
-									Buy with Card
-								</p>
-								<p className="text-xs text-muted-foreground">
-									Visa / Mastercard · 5 min
-								</p>
-							</div>
-						</button>
+						{/* Bridge USDC — Extended only */}
+						{methods.includes('bridge-usdc') && (
+							<MethodButton
+								icon={<Coins className="size-5" />}
+								title="Deposit USDC"
+								subtitle="Arbitrum, Ethereum, Base... · ~2 min"
+								onClick={() => setView('bridge-usdc')}
+							/>
+						)}
+
+						{/* Buy with card — both DEXes */}
+						{methods.includes('card') && (
+							<MethodButton
+								icon={<CreditCard className="size-5" />}
+								title="Buy with Card"
+								subtitle="Visa / Mastercard · 5 min"
+								onClick={handleBuyWithCard}
+							/>
+						)}
 					</div>
 				)}
 
-				{/* Deposit sub-view */}
 				{view === 'deposit' && <DepositTab />}
-
-				{/* Cross-chain sub-view */}
 				{view === 'crosschain' && (
 					<CrosschainTab onSuccess={handleCrosschainSuccess} />
 				)}
+				{view === 'bridge-usdc' && <ExtendedDeposit />}
 			</DialogContent>
 		</Dialog>
+	);
+}
+
+/** Reusable method button for the selector */
+function MethodButton({
+	icon,
+	title,
+	subtitle,
+	onClick,
+}: {
+	icon: React.ReactNode;
+	title: string;
+	subtitle: string;
+	onClick: () => void;
+}) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			className={cn(
+				'flex w-full items-center gap-3 rounded-lg border border-border p-4 text-left transition-colors',
+				'hover:border-primary/50 hover:bg-muted/30',
+			)}
+		>
+			<div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+				{icon}
+			</div>
+			<div className="flex-1">
+				<p className="text-sm font-medium text-foreground">{title}</p>
+				<p className="text-xs text-muted-foreground">{subtitle}</p>
+			</div>
+		</button>
 	);
 }

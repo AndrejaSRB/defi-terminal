@@ -111,14 +111,15 @@ export const extendedNormalizer: DexNormalizer = {
 	},
 
 	depositConfig: {
-		chainId: 1, // Ethereum mainnet for Starknet deposits
-		tokenAddress: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC on Ethereum
+		methods: ['bridge-usdc', 'card'],
+		chainId: 42161, // Default to Arbitrum (user can pick chain)
+		tokenAddress: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USDC on Arbitrum
 		tokenSymbol: 'USDC',
 		tokenDecimals: 6,
-		minDeposit: 10,
-		fee: 0,
-		bridgeAddress: '', // Will be set during onboarding
-		estimatedTime: '~10 min',
+		minDeposit: 5,
+		fee: 0, // Dynamic from bridge quote
+		bridgeAddress: '', // Dynamic from /bridge/config
+		estimatedTime: '~2 min',
 	},
 	withdrawConfig: {
 		tokenSymbol: 'USDC',

@@ -21,8 +21,14 @@ export default async function handler(
 	req: VercelRequest,
 	res: VercelResponse,
 ) {
-	// CORS headers
-	res.setHeader('Access-Control-Allow-Origin', '*');
+	// CORS headers — restrict to own domains
+	const origin = req.headers.origin ?? '';
+	const allowedOrigin =
+		origin === 'http://localhost:5173' ||
+		origin.endsWith('.vercel.app')
+			? origin
+			: 'https://defi-terminal-seven.vercel.app';
+	res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
 	res.setHeader(
 		'Access-Control-Allow-Methods',
 		'GET, POST, PATCH, PUT, DELETE, OPTIONS',

@@ -51,8 +51,13 @@ export interface FormatPriceOptions {
 }
 
 // ── Deposit Config ──────────────────────────────────────────────────
+
+export type DepositMethod = 'native' | 'cross-chain' | 'bridge-usdc' | 'card';
+
 export interface DepositConfig {
-	/** Chain ID where the DEX accepts deposits */
+	/** Which deposit methods are available for this DEX */
+	methods: DepositMethod[];
+	/** Chain ID where the DEX accepts native deposits (HL) */
 	chainId: number;
 	/** Token address the DEX accepts (USDC, etc.) */
 	tokenAddress: string;
