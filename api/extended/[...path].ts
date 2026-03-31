@@ -25,13 +25,11 @@ const CORS_HEADERS = {
  */
 export default {
 	async fetch(request: Request): Promise<Response> {
-		// Handle CORS preflight
 		if (request.method === 'OPTIONS') {
 			return new Response(null, { status: 204, headers: CORS_HEADERS });
 		}
 
 		const url = new URL(request.url);
-		// /api/extended/api/v1/info/markets → /api/v1/info/markets
 		const apiPath = url.pathname.replace('/api/extended', '');
 		const target = `${EXT_API}${apiPath}${url.search}`;
 
@@ -74,7 +72,10 @@ export default {
 				JSON.stringify({ error: 'Proxy fetch failed' }),
 				{
 					status: 502,
-					headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+					headers: {
+						...CORS_HEADERS,
+						'Content-Type': 'application/json',
+					},
 				},
 			);
 		}
