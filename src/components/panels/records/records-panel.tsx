@@ -20,7 +20,7 @@ export function RecordsPanel() {
 			<div className="relative shrink-0">
 				<TabsList
 					variant="line"
-					className="no-scrollbar flex h-8 w-full flex-nowrap justify-start overflow-x-auto rounded-none px-2 [&>*]:flex-none"
+					className="no-scrollbar flex h-8 w-full flex-nowrap justify-start overflow-x-auto overscroll-x-contain rounded-none px-2 [touch-action:pan-x] [&>*]:flex-none"
 				>
 					<TabsTrigger value="balances" className="text-xs">
 						Balances{balanceCount > 0 ? ` (${balanceCount})` : ''}

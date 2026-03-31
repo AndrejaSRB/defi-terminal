@@ -92,7 +92,7 @@ export function TerminalLayoutDesktop() {
 										{showOrderbook && (
 											<ResizablePanel
 												id="orderbook-section"
-												defaultSize={isXl ? 322 : 260}
+												defaultSize={isXl ? 280 : 220}
 												minSize={isXl ? 280 : 220}
 											>
 												<div className="relative flex h-full flex-col overflow-hidden rounded-sm border border-border bg-card">
@@ -130,7 +130,7 @@ export function TerminalLayoutDesktop() {
 				{showRight && (
 					<ResizablePanel
 						id="right-column-section"
-						defaultSize={295}
+						defaultSize={isXl ? 295 : 260}
 						minSize={isXl ? 295 : 260}
 					>
 						<ResizablePanelGroup
