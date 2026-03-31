@@ -1,5 +1,3 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-
 const EXT_API = 'https://api.starknet.extended.exchange';
 const EXT_UA = 'Mozilla/5.0 Tegra/1.0';
 const EXT_ORIGIN = 'https://app.extended.exchange';
@@ -13,63 +11,72 @@ const FORWARD_HEADERS = [
 	'x-x10-active-account',
 ];
 
+const CORS_HEADERS = {
+	'Access-Control-Allow-Origin': '*',
+	'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
+	'Access-Control-Allow-Headers': [...FORWARD_HEADERS, 'Content-Type'].join(
+		', ',
+	),
+};
+
 /**
  * Vercel serverless proxy for Extended API.
  * Required because Extended API does not return CORS headers.
- * Mirrors the Vite dev proxy behavior for production.
  */
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-	const { path } = req.query;
-	const apiPath = Array.isArray(path) ? path.join('/') : path ?? '';
-	const search = req.url?.includes('?')
-		? `?${req.url.split('?').slice(1).join('?')}`
-		: '';
-
-	// Strip the [...path] query param from search string
-	const cleanSearch = search
-		.replace(/[?&]path=[^&]*/g, '')
-		.replace(/^\?&/, '?')
-		.replace(/^\?$/, '');
-
-	const target = `${EXT_API}/${apiPath}${cleanSearch}`;
-
-	const headers: Record<string, string> = {
-		'Content-Type': 'application/json',
-		'Origin': EXT_ORIGIN,
-		'User-Agent': EXT_UA,
-	};
-
-	for (const key of FORWARD_HEADERS) {
-		const value = req.headers[key];
-		if (typeof value === 'string') headers[key] = value;
-	}
-
-	try {
-		const response = await fetch(target, {
-			method: req.method ?? 'GET',
-			headers,
-			...(req.body ? { body: JSON.stringify(req.body) } : {}),
-		});
-
-		const data = await response.arrayBuffer();
-
-		// Set CORS headers
-		res.setHeader('Access-Control-Allow-Origin', '*');
-		res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
-		res.setHeader('Access-Control-Allow-Headers', FORWARD_HEADERS.join(', ') + ', Content-Type');
-
-		// Handle preflight
-		if (req.method === 'OPTIONS') {
-			res.status(204).end();
-			return;
+export default {
+	async fetch(request: Request): Promise<Response> {
+		// Handle CORS preflight
+		if (request.method === 'OPTIONS') {
+			return new Response(null, { status: 204, headers: CORS_HEADERS });
 		}
 
-		// Forward content type
-		const contentType = response.headers.get('content-type');
-		if (contentType) res.setHeader('Content-Type', contentType);
+		const url = new URL(request.url);
+		// /api/extended/api/v1/info/markets → /api/v1/info/markets
+		const apiPath = url.pathname.replace('/api/extended', '');
+		const target = `${EXT_API}${apiPath}${url.search}`;
 
-		res.status(response.status).send(Buffer.from(data));
-	} catch {
-		res.status(502).json({ error: 'Proxy fetch failed' });
-	}
-}
+		const headers: Record<string, string> = {
+			'Content-Type': 'application/json',
+			Origin: EXT_ORIGIN,
+			'User-Agent': EXT_UA,
+		};
+
+		for (const key of FORWARD_HEADERS) {
+			const value = request.headers.get(key);
+			if (value) headers[key] = value;
+		}
+
+		try {
+			const body =
+				request.method !== 'GET' && request.method !== 'HEAD'
+					? await request.text()
+					: undefined;
+
+			const response = await fetch(target, {
+				method: request.method,
+				headers,
+				...(body ? { body } : {}),
+			});
+
+			const data = await response.arrayBuffer();
+			const contentType =
+				response.headers.get('content-type') ?? 'application/json';
+
+			return new Response(data, {
+				status: response.status,
+				headers: {
+					...CORS_HEADERS,
+					'Content-Type': contentType,
+				},
+			});
+		} catch {
+			return new Response(
+				JSON.stringify({ error: 'Proxy fetch failed' }),
+				{
+					status: 502,
+					headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+				},
+			);
+		}
+	},
+};
