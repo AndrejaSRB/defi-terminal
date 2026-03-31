@@ -79,10 +79,7 @@ export function createDatafeed(
 			setTimeout(() => {
 				try {
 					const price = getPrice(symbolName);
-					const decimals =
-						price > 0
-							? normalizer.calculatePriceDecimals(price, symbolName)
-							: 2; // Safe default until price is available
+					const decimals = normalizer.calculatePriceDecimals(price, symbolName);
 					const pricescale = Math.pow(10, decimals);
 
 					const symbolInfo: LibrarySymbolInfo = {

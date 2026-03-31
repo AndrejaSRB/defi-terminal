@@ -14,6 +14,7 @@ import { OrderFormPanel } from '@/components/panels/order-form/order-form-panel'
 import { RecordsPanel } from '@/components/panels/records/records-panel';
 import { AccountPanel } from '@/components/panels/account-panel';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { useSavedLayout } from '@/hooks/use-saved-layout';
 
 const H_HANDLE = { width: '100%', height: 4 };
 const V_HANDLE = { width: 4, height: '100%' };
@@ -21,6 +22,11 @@ const V_HANDLE = { width: 4, height: '100%' };
 export function TerminalLayoutDesktop() {
 	const isXl = useMediaQuery('(min-width: 1280px)');
 	const visibility = useAtomValue(panelVisibilityAtom);
+
+	const mainLayout = useSavedLayout('main');
+	const leftLayout = useSavedLayout('left');
+	const chartObLayout = useSavedLayout('chart-ob');
+	const rightLayout = useSavedLayout('right');
 
 	const showChart = visibility.chart;
 	const showOrderbook = visibility.orderbook;
@@ -43,18 +49,28 @@ export function TerminalLayoutDesktop() {
 				key={layoutKey}
 				orientation="horizontal"
 				className="flex-1 p-1"
+				defaultLayout={mainLayout.defaultLayout}
+				onLayoutChange={mainLayout.onLayoutChange}
 			>
 				{/* Left */}
 				{showLeft && (
 					<ResizablePanel id="left-content-section" minSize={isXl ? 744 : 500}>
-						<ResizablePanelGroup orientation="vertical">
+						<ResizablePanelGroup
+							orientation="vertical"
+							defaultLayout={leftLayout.defaultLayout}
+							onLayoutChange={leftLayout.onLayoutChange}
+						>
 							{/* Chart + Orderbook */}
 							{showTopLeft && (
 								<ResizablePanel
 									id="top-left-section"
 									minSize={isXl ? 330 : 250}
 								>
-									<ResizablePanelGroup orientation="horizontal">
+									<ResizablePanelGroup
+										orientation="horizontal"
+										defaultLayout={chartObLayout.defaultLayout}
+										onLayoutChange={chartObLayout.onLayoutChange}
+									>
 										{showChart && (
 											<ResizablePanel
 												id="chart-section"
@@ -117,7 +133,11 @@ export function TerminalLayoutDesktop() {
 						defaultSize={295}
 						minSize={isXl ? 295 : 260}
 					>
-						<ResizablePanelGroup orientation="vertical">
+						<ResizablePanelGroup
+							orientation="vertical"
+							defaultLayout={rightLayout.defaultLayout}
+							onLayoutChange={rightLayout.onLayoutChange}
+						>
 							{showOrderForm && (
 								<ResizablePanel id="placeorder-section" minSize={740}>
 									<div className="relative flex h-full flex-col overflow-hidden rounded-sm border border-border bg-card">

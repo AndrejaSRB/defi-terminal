@@ -11,18 +11,23 @@ export function useChartData() {
 	const assetMeta = useAtomValue(assetMetaAtom);
 	const store = useStore();
 
+	// Stable reference — store.get always reads latest values
 	const getPrice = useCallback(
 		(coin: string) => {
-			const prices = store.get(pricesAtom);
-			return parseFloat(prices[coin] ?? '0');
+			const currentPrices = store.get(pricesAtom);
+			return parseFloat(currentPrices[coin] ?? '0');
 		},
-		[store],
+		// biome-ignore lint: store is stable across renders, empty deps intentional
+		[],
 	);
+
+	const prices = useAtomValue(pricesAtom);
+	const hasPrices = Object.keys(prices).length > 0;
 
 	return {
 		token,
 		normalizer,
-		assetMetaReady: assetMeta.size > 0,
+		assetMetaReady: assetMeta.size > 0 && hasPrices,
 		getPrice,
 	};
 }

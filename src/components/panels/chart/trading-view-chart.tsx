@@ -176,22 +176,20 @@ export default function TradingViewChart() {
 			setIsReady(false);
 			setError(null);
 		};
-	}, [normalizer, assetMetaReady, retryCount, getPrice, token]);
+	}, [normalizer, assetMetaReady, retryCount, getPrice]);
 
-	// Live theme sync — apply color overrides to running widget without recreation
+	// Live theme sync — only applies when themeId actually changes
+	const prevThemeRef = useRef(themeId);
 	useEffect(() => {
 		if (!isReady || !widgetRef.current || !containerRef.current) return;
-		const widget = widgetRef.current;
-		const container = containerRef.current;
-		// Small delay to let CSS variables settle after theme application
-		const timer = setTimeout(() => {
-			try {
-				applyWidgetTheme(widget, container);
-			} catch (overrideError) {
-				console.warn('[Chart] Failed to apply theme overrides:', overrideError);
-			}
-		}, 50);
-		return () => clearTimeout(timer);
+		if (prevThemeRef.current === themeId) return;
+		prevThemeRef.current = themeId;
+
+		try {
+			applyWidgetTheme(widgetRef.current, containerRef.current);
+		} catch (overrideError) {
+			console.warn('[Chart] Failed to apply theme overrides:', overrideError);
+		}
 	}, [themeId, isReady]);
 
 	// Symbol switch

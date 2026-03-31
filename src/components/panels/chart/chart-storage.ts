@@ -56,11 +56,6 @@ export class LocalStorageSaveLoadAdapter implements IExternalSaveLoadAdapter {
 	}
 
 	async saveChart(chartData: ChartData): Promise<string> {
-		console.log(
-			'[ChartStorage] saveChart called:',
-			chartData.name,
-			chartData.id,
-		);
 		const charts = read<ChartMetaInfo[]>(KEYS.charts, []);
 		const content = read<Record<string, string>>(KEYS.chartContent, {});
 
@@ -221,11 +216,6 @@ export class LocalStorageSaveLoadAdapter implements IExternalSaveLoadAdapter {
 		chartId: string | number,
 		state: LineToolsAndGroupsState,
 	): Promise<void> {
-		console.log(
-			'[ChartStorage] saveLineToolsAndGroups called:',
-			chartId,
-			state,
-		);
 		const all = read<Record<string, LineToolsAndGroupsState>>(
 			KEYS.lineTools,
 			{},
@@ -240,7 +230,6 @@ export class LocalStorageSaveLoadAdapter implements IExternalSaveLoadAdapter {
 		_requestType: LineToolsAndGroupsLoadRequestType,
 		_requestContext: LineToolsAndGroupsLoadRequestContext,
 	): Promise<Partial<LineToolsAndGroupsState> | null> {
-		console.log('[ChartStorage] loadLineToolsAndGroups called:', chartId);
 		const all = read<Record<string, LineToolsAndGroupsState>>(
 			KEYS.lineTools,
 			{},

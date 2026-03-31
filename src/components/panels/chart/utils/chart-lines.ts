@@ -152,6 +152,14 @@ export class ChartLineManager {
 			}
 		}
 		this.lines.clear();
+		this.lineConfigs.clear();
+	}
+
+	// Track config per key for diff detection
+	private lineConfigs = new Map<string, string>();
+
+	private configFingerprint(config: LineConfig): string {
+		return `${config.price}:${config.color}:${config.style}:${config.width}:${config.text}`;
 	}
 
 	private async upsertLine(
@@ -160,8 +168,14 @@ export class ChartLineManager {
 		config: LineConfig,
 	): Promise<void> {
 		const existing = this.lines.get(key);
+		const fingerprint = this.configFingerprint(config);
 
-		// Always remove and recreate to ensure all properties apply correctly
+		// Skip if line exists with identical config
+		if (existing && this.lineConfigs.get(key) === fingerprint) {
+			return;
+		}
+
+		// Remove old line if it exists
 		if (existing) {
 			try {
 				chart.removeEntity(existing);
@@ -169,6 +183,7 @@ export class ChartLineManager {
 				// Already removed
 			}
 			this.lines.delete(key);
+			this.lineConfigs.delete(key);
 		}
 
 		try {
@@ -193,6 +208,7 @@ export class ChartLineManager {
 				// Ignore
 			}
 			this.lines.set(key, entityId);
+			this.lineConfigs.set(key, fingerprint);
 		} catch (error) {
 			console.warn(`[ChartLines] Failed to create line "${key}":`, error);
 		}
@@ -211,6 +227,7 @@ export class ChartLineManager {
 					// Already removed
 				}
 				this.lines.delete(key);
+				this.lineConfigs.delete(key);
 			}
 		}
 	}
