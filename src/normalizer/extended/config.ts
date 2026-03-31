@@ -1,18 +1,15 @@
 const isDev = import.meta.env.DEV;
 
-const wsProtocol = isDev ? 'ws' : 'wss';
-const wsHost = isDev ? 'localhost:5173' : 'api.starknet.extended.exchange';
-
 export const EXTENDED_CONFIG = {
-	REST_URL: isDev
-		? '/api/extended/api/v1'
-		: 'https://api.starknet.extended.exchange/api/v1',
+	// Both dev (Vite proxy) and prod (Vercel serverless) use same path
+	REST_URL: '/api/extended/api/v1',
 
-	ONBOARDING_URL: isDev
-		? '/api/extended'
-		: 'https://api.starknet.extended.exchange',
+	ONBOARDING_URL: '/api/extended',
 
-	WEBSOCKET_URL: `${wsProtocol}://${wsHost}/ws-extended/stream.extended.exchange/v1`,
+	// Dev: WS relay through Vite proxy. Prod: direct to Extended (WS has no CORS)
+	WEBSOCKET_URL: isDev
+		? 'ws://localhost:5173/ws-extended/stream.extended.exchange/v1'
+		: 'wss://api.starknet.extended.exchange/stream.extended.exchange/v1',
 
 	/** EIP-712 signing domain — only 'name' field per Extended SDK */
 	SIGNING_DOMAIN: {
