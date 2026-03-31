@@ -21,11 +21,10 @@ export function getColorOverrides() {
 	};
 }
 
-/** Full overrides for constructor — includes non-color values */
+/** Full overrides for constructor */
 export function getChartOverrides() {
 	return {
 		...getColorOverrides(),
-		'mainSeriesProperties.minBarSpacing': 4,
 	};
 }
 
@@ -137,4 +136,5 @@ export const DISABLED_FEATURES = [
 export const ENABLED_FEATURES = [
 	'study_templates',
 	'iframe_loading_same_origin',
+	'use_localstorage_for_settings',
 ];

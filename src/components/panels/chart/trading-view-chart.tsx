@@ -119,6 +119,35 @@ export default function TradingViewChart() {
 				if (containerRef.current) {
 					applyWidgetTheme(widget, containerRef.current);
 				}
+
+				// Initial save
+				widget.saveChartToServer(undefined, undefined, {
+					defaultChartName: 'default',
+				});
+
+				// Debounced save — prevents excessive saves during drag operations
+				let saveTimer: ReturnType<typeof setTimeout> | null = null;
+				const debouncedSave = () => {
+					if (disposed) return;
+					if (saveTimer) clearTimeout(saveTimer);
+					saveTimer = setTimeout(() => {
+						if (!disposed) widget.saveChartToServer();
+					}, 1000);
+				};
+
+				const handleDrawingEvent = (_sourceId: unknown, eventType: string) => {
+					// Save on meaningful changes, skip click (read-only)
+					if (eventType === 'click') return;
+					debouncedSave();
+				};
+
+				const handleStudyEvent = () => {
+					debouncedSave();
+				};
+
+				widget.subscribe('drawing_event', handleDrawingEvent);
+				widget.subscribe('study_event', handleStudyEvent);
+
 				setIsReady(true);
 			});
 		}
