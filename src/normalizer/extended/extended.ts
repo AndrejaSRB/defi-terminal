@@ -1,4 +1,21 @@
-import type { ActiveAssetData, AssetMeta } from '@/normalizer/types';
+import type {
+	ActiveAssetData,
+	AssetMeta,
+	FundingPayment,
+	HistoricalOrder,
+	MarginSummary,
+	OpenOrder,
+	Position,
+	UserBalance,
+	UserFill,
+} from '@/normalizer/types';
+import { fetchBalance } from './services/balance-api';
+import { fetchPositions } from './services/positions-api';
+import { fetchOpenOrders } from './services/orders-api';
+import { fetchOrderHistory } from './services/order-history-api';
+import { fetchUserTrades } from './services/trades-api';
+import { fetchFundingHistory } from './services/funding-api';
+import { fetchLeverage } from './services/leverage-api';
 import type {
 	ChannelDescriptor,
 	DexNormalizer,
@@ -318,5 +335,188 @@ export const extendedNormalizer: DexNormalizer = {
 			return entryPrice * (1 - (1 / leverage - maintenanceMargin));
 		}
 		return entryPrice * (1 + (1 / leverage - maintenanceMargin));
+	},
+
+	// ── REST Polling (private user data) ──
+
+	async fetchUserData(walletAddress) {
+		const [extBalance, extPositions, extOrders] = await Promise.all([
+			fetchBalance(walletAddress),
+			fetchPositions(walletAddress),
+			fetchOpenOrders(walletAddress),
+		]);
+
+		const balance: MarginSummary | null = extBalance
+			? {
+					accountValue: extBalance.equity,
+					totalMarginUsed: extBalance.initialMargin,
+					crossMaintenanceMarginUsed: '0',
+					withdrawable: extBalance.availableForTrade,
+					totalRawUsd: extBalance.equity,
+				}
+			: null;
+
+		const positions: Position[] = extPositions.map((extPosition) => {
+			// Initial margin = value / leverage (what Extended displays as "Margin")
+			const value = parseFloat(extPosition.value);
+			const leverage = parseFloat(extPosition.leverage);
+			const initialMargin = leverage > 0 ? value / leverage : 0;
+
+			return {
+				coin: extPosition.market,
+				size: extPosition.size,
+				side: extPosition.side,
+				entryPrice: extPosition.openPrice,
+				unrealizedPnl: extPosition.unrealisedPnl,
+				leverage: extPosition.leverage,
+				liquidationPrice: extPosition.liquidationPrice,
+				marginUsed: initialMargin.toFixed(6),
+				funding: '',
+				tp: extPosition.tpTriggerPrice
+					? parseFloat(extPosition.tpTriggerPrice)
+					: null,
+				sl: extPosition.slTriggerPrice
+					? parseFloat(extPosition.slTriggerPrice)
+					: null,
+			};
+		});
+
+		const perpsBalances: UserBalance[] = extBalance
+			? [
+					{
+						coin: 'USDC',
+						totalBalance: extBalance.balance,
+						availableBalance: extBalance.availableForTrade,
+						usdValue: parseFloat(extBalance.equity),
+						pnl: parseFloat(extBalance.unrealisedPnl),
+						roi: 0,
+						type: 'perps',
+					},
+				]
+			: [];
+
+		const openOrders: OpenOrder[] = extOrders.map((extOrder) => {
+			const isTpsl = extOrder.type === 'TPSL';
+			const isTp = !!extOrder.takeProfit && !extOrder.stopLoss;
+			const isSl = !!extOrder.stopLoss && !extOrder.takeProfit;
+
+			let orderType: OpenOrder['orderType'] = 'limit';
+			if (extOrder.type === 'CONDITIONAL') {
+				orderType =
+					extOrder.trigger?.executionPriceType === 'MARKET'
+						? 'sl_market'
+						: 'sl';
+			} else if (isTpsl || isTp) {
+				orderType = 'tp_market';
+			} else if (isSl) {
+				orderType = 'sl_market';
+			}
+
+			return {
+				id: String(extOrder.id),
+				coin: extOrder.market,
+				side: extOrder.side === 'BUY' ? ('buy' as const) : ('sell' as const),
+				price: parseFloat(extOrder.price),
+				size: parseFloat(extOrder.qty),
+				origSize: parseFloat(extOrder.qty),
+				filledSize: parseFloat(extOrder.filledQty ?? '0'),
+				isReduceOnly: extOrder.reduceOnly,
+				orderType,
+				triggerPrice: extOrder.trigger
+					? parseFloat(extOrder.trigger.triggerPrice)
+					: null,
+				triggerCondition: extOrder.trigger?.triggerPriceDirection ?? null,
+				tp: extOrder.takeProfit
+					? parseFloat(extOrder.takeProfit.triggerPrice)
+					: null,
+				sl: extOrder.stopLoss
+					? parseFloat(extOrder.stopLoss.triggerPrice)
+					: null,
+				status:
+					extOrder.status === 'PARTIALLY_FILLED'
+						? ('partial' as const)
+						: ('open' as const),
+				timestamp: extOrder.createdTime,
+				isPositionTpsl: isTpsl && extOrder.tpSlType === 'POSITION',
+				tif: extOrder.timeInForce,
+				cloid: extOrder.externalId,
+			};
+		});
+
+		return { balance, positions, openOrders, perpsBalances };
+	},
+
+	async fetchUserLeverage(walletAddress, market) {
+		return fetchLeverage(walletAddress, market);
+	},
+
+	async fetchOrderHistory(
+		walletAddress: string,
+		limit = 50,
+	): Promise<HistoricalOrder[]> {
+		const orders = await fetchOrderHistory(walletAddress, limit);
+		return orders.map((extOrder) => ({
+			id: String(extOrder.id),
+			coin: extOrder.market,
+			side: extOrder.side === 'BUY' ? ('buy' as const) : ('sell' as const),
+			orderType: extOrder.type.toLowerCase(),
+			dir: extOrder.reduceOnly
+				? extOrder.side === 'BUY'
+					? 'Close Short'
+					: 'Close Long'
+				: extOrder.side === 'BUY'
+					? 'Open Long'
+					: 'Open Short',
+			price: parseFloat(extOrder.price),
+			size: parseFloat(extOrder.qty),
+			filledSize: parseFloat(extOrder.filledQty ?? '0'),
+			origSize: parseFloat(extOrder.qty),
+			status: extOrder.status.toLowerCase(),
+			reduceOnly: extOrder.reduceOnly,
+			triggerCondition: extOrder.trigger?.triggerPriceDirection ?? null,
+			tp: extOrder.takeProfit
+				? parseFloat(extOrder.takeProfit.triggerPrice)
+				: null,
+			sl: extOrder.stopLoss ? parseFloat(extOrder.stopLoss.triggerPrice) : null,
+			timestamp: extOrder.createdTime,
+			statusTimestamp: extOrder.updatedTime,
+		}));
+	},
+
+	async fetchFundingHistory(walletAddress: string): Promise<FundingPayment[]> {
+		const payments = await fetchFundingHistory(walletAddress);
+		return payments.map((payment) => ({
+			time: payment.paidTime,
+			coin: payment.market,
+			usdc: parseFloat(payment.fundingFee),
+			size: parseFloat(payment.size),
+			fundingRate: parseFloat(payment.fundingRate),
+			side: payment.side === 'LONG' ? ('Long' as const) : ('Short' as const),
+		}));
+	},
+
+	async fetchUserFills(walletAddress, limit = 50): Promise<UserFill[]> {
+		const trades = await fetchUserTrades(walletAddress, limit);
+		return trades.map((trade) => ({
+			id: String(trade.id),
+			coin: trade.market,
+			side: trade.side === 'BUY' ? ('buy' as const) : ('sell' as const),
+			dir:
+				trade.tradeType === 'LIQUIDATION' || trade.tradeType === 'DELEVERAGE'
+					? trade.side === 'BUY'
+						? 'Close Short'
+						: 'Close Long'
+					: trade.side === 'BUY'
+						? 'Open Long'
+						: 'Open Short',
+			price: parseFloat(trade.price),
+			size: parseFloat(trade.qty),
+			closedPnl: 0,
+			fee: parseFloat(trade.fee),
+			feeToken: 'USDC',
+			crossed: trade.isTaker,
+			hash: '',
+			time: trade.createdTime,
+		}));
 	},
 };

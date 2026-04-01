@@ -19,13 +19,18 @@ export function useBalancesData() {
 
 	const balances = useMemo(() => {
 		const all = [...perps, ...spot];
+		const fmt = (value: string) =>
+			parseFloat(value).toLocaleString('en-US', {
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 2,
+			});
 		return all.map(
-			(b): FormattedBalance => ({
-				coin: b.coin,
-				totalBalance: `${b.totalBalance} ${b.coin.includes('USDC') ? 'USDC' : b.coin}`,
-				availableBalance: `${b.availableBalance} ${b.coin.includes('USDC') ? 'USDC' : b.coin}`,
-				usdValue: `$${b.usdValue.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
-				type: b.type,
+			(balance): FormattedBalance => ({
+				coin: balance.coin,
+				totalBalance: `${fmt(balance.totalBalance)} ${balance.coin.includes('USDC') ? 'USDC' : balance.coin}`,
+				availableBalance: `${fmt(balance.availableBalance)} ${balance.coin.includes('USDC') ? 'USDC' : balance.coin}`,
+				usdValue: `$${balance.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+				type: balance.type,
 			}),
 		);
 	}, [perps, spot]);

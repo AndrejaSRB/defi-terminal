@@ -48,9 +48,12 @@ export function useFillsData() {
 				dir: f.dir,
 				price: normalizer.formatPrice(f.price, f.coin),
 				size: `${normalizer.formatSize(f.size, f.coin)} ${formattedTokenName}`,
-				tradeValue: `${tradeValue.toLocaleString('en-US', { maximumFractionDigits: 2 })} ${f.feeToken}`,
-				fee: `${Math.abs(f.fee).toLocaleString('en-US', { maximumFractionDigits: 2 })} ${f.feeToken}`,
-				closedPnl: `${f.closedPnl >= 0 ? '+' : '-'}$${Math.abs(f.closedPnl).toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
+				tradeValue: `${tradeValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${f.feeToken}`,
+				fee: `${Math.abs(f.fee).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })} ${f.feeToken}`,
+				closedPnl:
+					f.closedPnl === 0 && !f.hash
+						? '—'
+						: `${f.closedPnl >= 0 ? '+' : '-'}$${Math.abs(f.closedPnl).toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
 				closedPnlValue: f.closedPnl,
 				time: formatTime(f.time),
 			};

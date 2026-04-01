@@ -18,28 +18,36 @@ export function useDexUserFundings() {
 			return;
 		}
 
-		if (!normalizer.channels.userFundings || !normalizer.parseUserFundings)
-			return;
+		// WS path — HL
+		if (normalizer.channels.userFundings && normalizer.parseUserFundings) {
+			const channel = normalizer.channels.userFundings(walletAddress);
+			const parse = normalizer.parseUserFundings;
+			let hasSnapshot = false;
 
-		const channel = normalizer.channels.userFundings(walletAddress);
-		const parse = normalizer.parseUserFundings;
-		let hasSnapshot = false;
+			const unsub = tradingWs.subscribe(channel, (raw) => {
+				const wsData = raw as {
+					isSnapshot?: boolean;
+					fundings?: unknown[];
+				};
+				const fundings = parse(wsData.fundings ?? raw);
 
-		const unsub = tradingWs.subscribe(channel, (raw) => {
-			const wsData = raw as {
-				isSnapshot?: boolean;
-				fundings?: unknown[];
-			};
-			const fundings = parse(wsData.fundings ?? raw);
+				if (wsData.isSnapshot || !hasSnapshot) {
+					hasSnapshot = true;
+					setFundings(fundings.reverse().slice(0, MAX_FUNDINGS));
+				} else {
+					setFundings((prev) => [...fundings, ...prev].slice(0, MAX_FUNDINGS));
+				}
+			});
 
-			if (wsData.isSnapshot || !hasSnapshot) {
-				hasSnapshot = true;
-				setFundings(fundings.reverse().slice(0, MAX_FUNDINGS));
-			} else {
-				setFundings((prev) => [...fundings, ...prev].slice(0, MAX_FUNDINGS));
-			}
-		});
+			return unsub;
+		}
 
-		return unsub;
+		// REST fallback — Extended
+		if (normalizer.fetchFundingHistory) {
+			normalizer
+				.fetchFundingHistory(walletAddress)
+				.then((fundings) => setFundings(fundings))
+				.catch(() => setFundings([]));
+		}
 	}, [normalizer, walletAddress, setFundings]);
 }

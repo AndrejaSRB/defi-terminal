@@ -164,7 +164,7 @@ export function useOrderFormData(): OrderFormData {
 			reduceOnly,
 			marginMode,
 			leverage,
-			availableMargin: `$${availableMarginRaw.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
+			availableMargin: `$${availableMarginRaw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
 			currentPosition,
 			tpslEnabled,
 			tpPrice,

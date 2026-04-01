@@ -43,28 +43,36 @@ export function useDexUserFills() {
 			return;
 		}
 
-		if (!normalizer.channels.userFills || !normalizer.parseUserFills) return;
+		// WS path — HL
+		if (normalizer.channels.userFills && normalizer.parseUserFills) {
+			const channel = normalizer.channels.userFills(walletAddress);
+			const parse = normalizer.parseUserFills;
+			let hasSnapshot = false;
 
-		const channel = normalizer.channels.userFills(walletAddress);
-		const parse = normalizer.parseUserFills;
-		let hasSnapshot = false;
+			const unsub = tradingWs.subscribe(channel, (raw) => {
+				const wsData = raw as { isSnapshot?: boolean; fills?: unknown[] };
+				const fills = parse(wsData.fills ?? raw);
 
-		const unsub = tradingWs.subscribe(channel, (raw) => {
-			const wsData = raw as { isSnapshot?: boolean; fills?: unknown[] };
-			const fills = parse(wsData.fills ?? raw);
-
-			if (wsData.isSnapshot || !hasSnapshot) {
-				hasSnapshot = true;
-				setFills(fills.reverse().slice(0, MAX_FILLS));
-			} else {
-				// Live fills — notify user
-				for (const fill of fills) {
-					notifyFill(fill, normalizer);
+				if (wsData.isSnapshot || !hasSnapshot) {
+					hasSnapshot = true;
+					setFills(fills.reverse().slice(0, MAX_FILLS));
+				} else {
+					for (const fill of fills) {
+						notifyFill(fill, normalizer);
+					}
+					setFills((prev) => [...fills, ...prev].slice(0, MAX_FILLS));
 				}
-				setFills((prev) => [...fills, ...prev].slice(0, MAX_FILLS));
-			}
-		});
+			});
 
-		return unsub;
+			return unsub;
+		}
+
+		// REST fallback — Extended
+		if (normalizer.fetchUserFills) {
+			normalizer
+				.fetchUserFills(walletAddress, MAX_FILLS)
+				.then((fills) => setFills(fills))
+				.catch(() => setFills([]));
+		}
 	}, [normalizer, walletAddress, setFills]);
 }

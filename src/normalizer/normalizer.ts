@@ -205,4 +205,23 @@ export interface DexNormalizer {
 	) => Promise<Candle[]>;
 	fetchAllAssetCtxs: () => Promise<Map<string, ActiveAssetData>>;
 	fetchUserFills?: (address: string, limit?: number) => Promise<UserFill[]>;
+	fetchOrderHistory?: (
+		address: string,
+		limit?: number,
+	) => Promise<HistoricalOrder[]>;
+	fetchFundingHistory?: (
+		address: string,
+	) => Promise<import('./types').FundingPayment[]>;
+
+	/** REST polling for DEXes without private WS (e.g. Extended) */
+	fetchUserData?: (walletAddress: string) => Promise<{
+		balance: MarginSummary | null;
+		positions: Position[];
+		openOrders: import('./types').OpenOrder[];
+		perpsBalances: import('./types').UserBalance[];
+	}>;
+	fetchUserLeverage?: (
+		walletAddress: string,
+		market: string,
+	) => Promise<number>;
 }

@@ -18,31 +18,39 @@ export function useDexUserOrderHistory() {
 			return;
 		}
 
+		// WS path — HL
 		if (
-			!normalizer.channels.userHistoricalOrders ||
-			!normalizer.parseHistoricalOrders
-		)
-			return;
+			normalizer.channels.userHistoricalOrders &&
+			normalizer.parseHistoricalOrders
+		) {
+			const channel = normalizer.channels.userHistoricalOrders(walletAddress);
+			const parse = normalizer.parseHistoricalOrders;
+			let hasSnapshot = false;
 
-		const channel = normalizer.channels.userHistoricalOrders(walletAddress);
-		const parse = normalizer.parseHistoricalOrders;
-		let hasSnapshot = false;
+			const unsub = tradingWs.subscribe(channel, (raw) => {
+				const wsData = raw as {
+					isSnapshot?: boolean;
+					orderHistory?: unknown[];
+				};
+				const orders = parse(wsData.orderHistory ?? raw);
 
-		const unsub = tradingWs.subscribe(channel, (raw) => {
-			const wsData = raw as {
-				isSnapshot?: boolean;
-				orderHistory?: unknown[];
-			};
-			const orders = parse(wsData.orderHistory ?? raw);
+				if (wsData.isSnapshot || !hasSnapshot) {
+					hasSnapshot = true;
+					setOrders(orders.reverse().slice(0, MAX_ORDERS));
+				} else {
+					setOrders((prev) => [...orders, ...prev].slice(0, MAX_ORDERS));
+				}
+			});
 
-			if (wsData.isSnapshot || !hasSnapshot) {
-				hasSnapshot = true;
-				setOrders(orders.reverse().slice(0, MAX_ORDERS));
-			} else {
-				setOrders((prev) => [...orders, ...prev].slice(0, MAX_ORDERS));
-			}
-		});
+			return unsub;
+		}
 
-		return unsub;
+		// REST fallback — Extended
+		if (normalizer.fetchOrderHistory) {
+			normalizer
+				.fetchOrderHistory(walletAddress, MAX_ORDERS)
+				.then((orders) => setOrders(orders))
+				.catch(() => setOrders([]));
+		}
 	}, [normalizer, walletAddress, setOrders]);
 }

@@ -110,21 +110,25 @@ export function usePositionsData() {
 							pos.coin,
 						)
 					: '--',
-				marginUsed: `$${margin.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
-				funding: `$${Math.abs(funding).toLocaleString('en-US', { maximumFractionDigits: 4 })}`,
-				tp: tpsl?.tp
-					? normalizer.formatPrice(tpsl.tp, pos.coin, noDollar)
-					: null,
-				sl: tpsl?.sl
-					? normalizer.formatPrice(tpsl.sl, pos.coin, noDollar)
-					: null,
+				marginUsed: `$${margin.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+				funding: pos.funding
+					? `$${Math.abs(funding).toLocaleString('en-US', { maximumFractionDigits: 4 })}`
+					: '—',
+				tp:
+					(tpsl?.tp ?? pos.tp)
+						? normalizer.formatPrice(tpsl?.tp ?? pos.tp!, pos.coin, noDollar)
+						: null,
+				sl:
+					(tpsl?.sl ?? pos.sl)
+						? normalizer.formatPrice(tpsl?.sl ?? pos.sl!, pos.coin, noDollar)
+						: null,
 				tpOrderId: tpsl?.tpOrderId ?? null,
 				slOrderId: tpsl?.slOrderId ?? null,
 				rawSize: size,
 				rawEntryPrice: entry,
 				rawMarkPrice: mark,
-				rawTpPrice: tpsl?.tp ?? null,
-				rawSlPrice: tpsl?.sl ?? null,
+				rawTpPrice: tpsl?.tp ?? pos.tp ?? null,
+				rawSlPrice: tpsl?.sl ?? pos.sl ?? null,
 			};
 		});
 	}, [positions, openOrders, prices, normalizer]);

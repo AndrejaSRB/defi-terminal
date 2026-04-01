@@ -7,6 +7,17 @@ import { connectionStateAtom } from '@/atoms/connection';
 import { allAssetCtxsAtom } from '@/atoms/all-asset-ctxs';
 import { pricesAtom } from '@/atoms/prices';
 import { activeTokenAtom } from '@/atoms/active-token';
+import { userTradingContextAtom } from '@/atoms/user/trading-context';
+import {
+	userMarginAtom,
+	userPerpsBalancesAtom,
+	userSpotBalancesAtom,
+} from '@/atoms/user/balances';
+import { userPositionsAtom } from '@/atoms/user/positions';
+import { userOpenOrdersAtom } from '@/atoms/user/orders';
+import { userFillsAtom } from '@/atoms/user/fills';
+import { userOrderHistoryAtom } from '@/atoms/user/order-history';
+import { userFundingsAtom } from '@/atoms/user/fundings';
 
 export function useWsConnection() {
 	const normalizer = useAtomValue(activeNormalizerAtom);
@@ -27,6 +38,15 @@ export function useWsConnection() {
 		setAssetMeta(new Map());
 		setAllAssetCtxs(new Map());
 		setPrices({});
+		store.set(userTradingContextAtom, null);
+		store.set(userMarginAtom, null);
+		store.set(userPositionsAtom, []);
+		store.set(userOpenOrdersAtom, []);
+		store.set(userFillsAtom, []);
+		store.set(userOrderHistoryAtom, []);
+		store.set(userFundingsAtom, []);
+		store.set(userPerpsBalancesAtom, []);
+		store.set(userSpotBalancesAtom, []);
 
 		// Configure protocol SYNCHRONOUSLY so other hooks' subscriptions use correct keys
 		configureDexWs(normalizer);
