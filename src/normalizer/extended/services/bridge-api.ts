@@ -37,17 +37,19 @@ export async function fetchBridgeConfig(apiKey: string): Promise<BridgeConfig> {
 }
 
 /**
- * Get a bridge quote for deposit.
- * GET /api/v1/user/bridge/quote?chainIn={chain}&chainOut=STRK&amount={amount}
+ * Get a bridge quote.
+ * Deposit: chainIn=EVM, chainOut=STRK
+ * Withdraw: chainIn=STRK, chainOut=EVM
  */
 export async function getBridgeQuote(
 	apiKey: string,
 	chainIn: string,
 	amount: number,
+	chainOut = 'STRK',
 ): Promise<BridgeQuote> {
 	const params = new URLSearchParams({
 		chainIn,
-		chainOut: 'STRK',
+		chainOut,
 		amount: String(amount),
 	});
 

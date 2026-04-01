@@ -1,6 +1,19 @@
 # DeFi Terminal
 
-Manual trading terminal supporting multiple DEXes. Currently integrated with HyperLiquid, with Extended, Lighter, and Pacifica planned.
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
+![Bun](https://img.shields.io/badge/Bun-000000?logo=bun&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?logo=tailwindcss&logoColor=white)
+
+Currently integrated with **HyperLiquid** and **Extended (StarkNet)**, with Lighter and Pacifica planned.
+
+## Bridging & Swaps
+
+| DEX | Provider | Purpose |
+|---|---|---|
+| HyperLiquid | [LiFi](https://li.fi/) | Cross-chain bridging and token swaps |
+| Extended (StarkNet) | [Rhino.fi](https://rhino.fi/) | Bridge deposits to StarkNet |
 
 ## Stack
 
@@ -31,8 +44,6 @@ bun run dev
 
 ## Architecture
 
-See [CLAUDE.md](./CLAUDE.md) for detailed architecture rules and conventions.
-
 ```
 src/
   services/        → Transport layer (WebSocket, framework-agnostic)
@@ -43,6 +54,17 @@ src/
   components/      → UI (render only, no business logic)
 ```
 
-## Adding a New DEX
+## Contributing
 
-Implement `DexNormalizer` from `src/normalizer/normalizer.ts` — no changes needed to services, hooks, or UI.
+Contributions are welcome! To get started:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Install dependencies (`bun install`)
+4. Make your changes
+5. Run checks (`bun run check`)
+6. Submit a pull request
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
