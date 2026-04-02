@@ -56,26 +56,12 @@ const CHAINS: ChainConfig[] = [
 ];
 
 const chainById = new Map(CHAINS.map((chain) => [chain.id, chain]));
-const zerionToChainId = new Map<string, number>([
-	['ethereum', 1],
-	['arbitrum', 42161],
-	['base', 8453],
-	['optimism', 10],
-	['polygon', 137],
-	['avalanche', 43114],
-	['binance-smart-chain', 56],
-]);
-
 export function getChainConfig(chainId: number): ChainConfig | undefined {
 	return chainById.get(chainId);
 }
 
 export function getChainName(chainId: number): string {
 	return chainById.get(chainId)?.name ?? `Chain ${chainId}`;
-}
-
-export function zerionNetworkToChainId(network: string): number | undefined {
-	return zerionToChainId.get(network);
 }
 
 export function getAllChainIds(): number[] {
