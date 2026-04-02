@@ -1,5 +1,6 @@
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { activeRecordsTabAtom } from '@/atoms/ui/records-tab';
 import { userPositionsCountAtom } from '@/atoms/user/positions';
 import { userOpenOrdersCountAtom } from '@/atoms/user/orders';
 import { userBalancesCountAtom } from '@/atoms/user/balances';
@@ -14,9 +15,14 @@ export function RecordsPanel() {
 	const posCount = useAtomValue(userPositionsCountAtom);
 	const orderCount = useAtomValue(userOpenOrdersCountAtom);
 	const balanceCount = useAtomValue(userBalancesCountAtom);
+	const setActiveTab = useSetAtom(activeRecordsTabAtom);
 
 	return (
-		<Tabs defaultValue="positions" className="flex h-full flex-col gap-0">
+		<Tabs
+			defaultValue="positions"
+			className="flex h-full flex-col gap-0"
+			onValueChange={setActiveTab}
+		>
 			<div className="relative shrink-0">
 				<TabsList
 					variant="line"

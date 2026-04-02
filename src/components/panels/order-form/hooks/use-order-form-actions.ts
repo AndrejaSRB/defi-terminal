@@ -321,6 +321,15 @@ export function useOrderFormActions(): OrderFormActions {
 		// If an onboarding step is pending, execute it instead of validating
 		const blocker = store.get(onboardingBlockerAtom);
 		if (blocker) {
+			// Deposit step — open deposit dialog instead of calling executeStep
+			if (blocker.id === 'deposit') {
+				const { depositDialogOpenAtom } = await import(
+					'@/atoms/ui/deposit-dialog'
+				);
+				store.set(depositDialogOpenAtom, true);
+				return;
+			}
+
 			const onboarding = store.get(activeDexOnboardingAtom);
 			if (!onboarding) {
 				toast.error('Trading not available for this DEX');

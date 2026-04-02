@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { cn } from '@/lib/utils';
 import { sentimentColor } from '@/lib/colors';
 import { Button } from '@/components/ui/button';
 import { walletAddressAtom } from '@/atoms/user/onboarding';
+import { depositDialogOpenAtom } from '@/atoms/ui/deposit-dialog';
 import { DepositDialog } from './deposit/deposit-dialog';
 import { WithdrawDialog } from './withdraw/withdraw-dialog';
 import {
@@ -49,10 +50,11 @@ export function AccountPanel() {
 	const walletAddress = useAtomValue(walletAddressAtom);
 	const isConnected = !!walletAddress;
 
-	const [depositOpen, setDepositOpen] = useState(false);
+	const depositOpen = useAtomValue(depositDialogOpenAtom);
+	const setDepositOpen = useSetAtom(depositDialogOpenAtom);
 	const [withdrawOpen, setWithdrawOpen] = useState(false);
 
-	const openDeposit = useCallback(() => setDepositOpen(true), []);
+	const openDeposit = useCallback(() => setDepositOpen(true), [setDepositOpen]);
 	const openWithdraw = useCallback(() => setWithdrawOpen(true), []);
 
 	return (

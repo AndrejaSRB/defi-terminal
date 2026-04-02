@@ -5,6 +5,10 @@
 			"source": "/api/extended/:path*",
 			"destination": "/api/extended/[...path]"
 		},
+		{
+			"source": "/api/zerion/:path*",
+			"destination": "/api/zerion/[...path]"
+		},
 		{ "source": "/(.*)", "destination": "/index.html" }
 	]
 }

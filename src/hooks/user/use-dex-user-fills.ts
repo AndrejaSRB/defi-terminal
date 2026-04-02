@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { tradingWs } from '@/services/ws';
 import { activeNormalizerAtom } from '@/atoms/dex';
 import { userFillsAtom } from '@/atoms/user/fills';
+import { activeRecordsTabAtom } from '@/atoms/ui/records-tab';
 import type { UserFill } from '@/normalizer/types';
 import { useAuth } from '../use-auth';
 
@@ -36,6 +37,7 @@ export function useDexUserFills() {
 	const normalizer = useAtomValue(activeNormalizerAtom);
 	const { walletAddress } = useAuth();
 	const setFills = useSetAtom(userFillsAtom);
+	const activeTab = useAtomValue(activeRecordsTabAtom);
 
 	useEffect(() => {
 		if (!walletAddress) {
@@ -67,12 +69,12 @@ export function useDexUserFills() {
 			return unsub;
 		}
 
-		// REST fallback — Extended
+		// REST fallback — Extended (refetch on tab activation)
 		if (normalizer.fetchUserFills) {
 			normalizer
 				.fetchUserFills(walletAddress, MAX_FILLS)
 				.then((fills) => setFills(fills))
 				.catch(() => setFills([]));
 		}
-	}, [normalizer, walletAddress, setFills]);
+	}, [normalizer, walletAddress, setFills, activeTab]);
 }

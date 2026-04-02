@@ -3,6 +3,7 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import { tradingWs } from '@/services/ws';
 import { activeNormalizerAtom } from '@/atoms/dex';
 import { userOrderHistoryAtom } from '@/atoms/user/order-history';
+import { activeRecordsTabAtom } from '@/atoms/ui/records-tab';
 import { useAuth } from '../use-auth';
 
 const MAX_ORDERS = 500;
@@ -11,6 +12,7 @@ export function useDexUserOrderHistory() {
 	const normalizer = useAtomValue(activeNormalizerAtom);
 	const { walletAddress } = useAuth();
 	const setOrders = useSetAtom(userOrderHistoryAtom);
+	const activeTab = useAtomValue(activeRecordsTabAtom);
 
 	useEffect(() => {
 		if (!walletAddress) {
@@ -45,12 +47,12 @@ export function useDexUserOrderHistory() {
 			return unsub;
 		}
 
-		// REST fallback — Extended
+		// REST fallback — Extended (refetch on tab activation)
 		if (normalizer.fetchOrderHistory) {
 			normalizer
 				.fetchOrderHistory(walletAddress, MAX_ORDERS)
 				.then((orders) => setOrders(orders))
 				.catch(() => setOrders([]));
 		}
-	}, [normalizer, walletAddress, setOrders]);
+	}, [normalizer, walletAddress, setOrders, activeTab]);
 }

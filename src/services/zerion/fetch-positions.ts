@@ -1,5 +1,9 @@
+const isDev = import.meta.env.DEV;
 const ZERION_API_KEY = import.meta.env.VITE_ZERION_API_KEY ?? '';
-const ZERION_BASE = 'https://api.zerion.io/v1';
+
+// Dev: call Zerion directly (CORS works from localhost)
+// Prod: proxy through Vercel serverless (CORS blocked from custom domains)
+const ZERION_BASE = isDev ? 'https://api.zerion.io/v1' : '/api/zerion';
 
 function getAuthHeader(): string {
 	return `Basic ${btoa(`${ZERION_API_KEY}:`)}`;
@@ -53,12 +57,15 @@ export async function fetchWalletPositions(
 
 	const url = `${ZERION_BASE}/wallets/${address}/positions/?${params}`;
 
-	const response = await fetch(url, {
-		headers: {
-			Authorization: getAuthHeader(),
-			accept: 'application/json',
-		},
-	});
+	// In dev, send auth header directly. In prod, the proxy adds it server-side.
+	const headers: Record<string, string> = {
+		accept: 'application/json',
+	};
+	if (isDev) {
+		headers.Authorization = getAuthHeader();
+	}
+
+	const response = await fetch(url, { headers });
 
 	if (!response.ok) return [];
 

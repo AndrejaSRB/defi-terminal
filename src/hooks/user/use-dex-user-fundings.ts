@@ -3,6 +3,7 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import { tradingWs } from '@/services/ws';
 import { activeNormalizerAtom } from '@/atoms/dex';
 import { userFundingsAtom } from '@/atoms/user/fundings';
+import { activeRecordsTabAtom } from '@/atoms/ui/records-tab';
 import { useAuth } from '../use-auth';
 
 const MAX_FUNDINGS = 500;
@@ -11,6 +12,7 @@ export function useDexUserFundings() {
 	const normalizer = useAtomValue(activeNormalizerAtom);
 	const { walletAddress } = useAuth();
 	const setFundings = useSetAtom(userFundingsAtom);
+	const activeTab = useAtomValue(activeRecordsTabAtom);
 
 	useEffect(() => {
 		if (!walletAddress) {
@@ -42,12 +44,12 @@ export function useDexUserFundings() {
 			return unsub;
 		}
 
-		// REST fallback — Extended
+		// REST fallback — Extended (refetch on tab activation)
 		if (normalizer.fetchFundingHistory) {
 			normalizer
 				.fetchFundingHistory(walletAddress)
 				.then((fundings) => setFundings(fundings))
 				.catch(() => setFundings([]));
 		}
-	}, [normalizer, walletAddress, setFundings]);
+	}, [normalizer, walletAddress, setFundings, activeTab]);
 }
