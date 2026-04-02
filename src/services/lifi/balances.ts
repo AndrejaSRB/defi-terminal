@@ -1,5 +1,7 @@
 import { getWalletBalances } from '@lifi/sdk';
 
+const MIN_USD_VALUE = 0.01;
+
 export interface WalletTokenBalance {
 	chainId: number;
 	address: string;
@@ -34,7 +36,7 @@ export async function fetchWalletBalances(
 			const usdValue = balance * priceUSD;
 
 			// Skip dust (< $0.01)
-			if (usdValue < 0.01 && balance > 0) continue;
+			if (usdValue < MIN_USD_VALUE && balance > 0) continue;
 			// Skip zero balances
 			if (balance === 0) continue;
 

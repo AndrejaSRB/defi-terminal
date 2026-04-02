@@ -9,6 +9,8 @@ import { useWidgetForm } from './use-widget-form';
 import { useWidgetExecute } from './use-widget-execute';
 import type { WidgetConfig } from '../types';
 
+const SPIN_DURATION_MS = 600;
+
 export type DepositStatus = 'idle' | 'depositing' | 'success' | 'error';
 
 interface UseWidgetParams {
@@ -29,7 +31,7 @@ export function useWidget({ config }: UseWidgetParams) {
 	const handleRefresh = useCallback(() => {
 		setIsSpinning(true);
 		form.refreshRoutes();
-		setTimeout(() => setIsSpinning(false), 600);
+		setTimeout(() => setIsSpinning(false), SPIN_DURATION_MS);
 	}, [form.refreshRoutes]);
 
 	// ── Direct deposit (ARB + USDC → HL bridge) ──

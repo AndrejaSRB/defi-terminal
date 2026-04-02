@@ -194,8 +194,8 @@ export function useWidgetExecute(config: WidgetConfig) {
 							`Bridge failed: ${result.substatusMessage ?? 'Unknown error'}`,
 						);
 					}
-				} catch {
-					// Silently retry on poll failure
+				} catch (pollError) {
+					console.warn('[Widget] Status poll failed, retrying...', pollError);
 				}
 			};
 

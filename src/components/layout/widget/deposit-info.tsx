@@ -9,10 +9,10 @@ interface DepositInfoProps {
 
 const DepositInfo = ({ config, amount }: DepositInfoProps) => {
 	const parsedAmount = Number(amount);
-	const receiveAmount =
-		parsedAmount > config.directDepositFee
-			? (parsedAmount - config.directDepositFee).toFixed(2)
-			: '0.00';
+	const receiveAmount = Math.max(
+		0,
+		parsedAmount - config.directDepositFee,
+	).toFixed(2);
 
 	return (
 		<div className="space-y-1.5 rounded-lg border border-border bg-muted/10 p-3 text-xs">
