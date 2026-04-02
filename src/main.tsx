@@ -12,8 +12,12 @@ const queryClient = new QueryClient({
 });
 import { PrivyProvider } from '@/providers/privy-provider';
 import { DexProvider } from '@/providers/dex-provider';
+import { ensureLifiSdk } from '@/services/lifi/client';
 import { router } from './routes';
 import './index.css';
+
+// Initialize LiFi SDK before any service calls
+ensureLifiSdk();
 
 createRoot(document.getElementById('root')!).render(
 	<StrictMode>

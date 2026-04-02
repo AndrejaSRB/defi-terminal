@@ -1,23 +1,13 @@
-import { LIFI_API_URL, LIFI_API_KEY, type LifiStatusResponse } from './types';
+import { getStatus } from '@lifi/sdk';
+import type { GetStatusRequest, StatusResponse } from '@lifi/sdk';
 
 export async function fetchLifiStatus(
 	txHash: string,
 	fromChain?: number,
 	toChain?: number,
-	bridge?: string,
-): Promise<LifiStatusResponse> {
-	const params = new URLSearchParams({ txHash });
-	if (fromChain) params.set('fromChain', fromChain.toString());
-	if (toChain) params.set('toChain', toChain.toString());
-	if (bridge) params.set('bridge', bridge);
-
-	const response = await fetch(`${LIFI_API_URL}/status?${params}`, {
-		headers: LIFI_API_KEY ? { 'x-lifi-api-key': LIFI_API_KEY } : {},
-	});
-
-	if (!response.ok) {
-		throw new Error(`LI.FI status check failed: ${response.status}`);
-	}
-
-	return (await response.json()) as LifiStatusResponse;
+): Promise<StatusResponse> {
+	const params: GetStatusRequest = { txHash };
+	if (fromChain) params.fromChain = fromChain;
+	if (toChain) params.toChain = toChain;
+	return getStatus(params);
 }

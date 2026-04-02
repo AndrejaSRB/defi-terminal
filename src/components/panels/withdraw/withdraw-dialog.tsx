@@ -52,9 +52,7 @@ function HlWithdraw() {
 						Available balance
 					</span>
 					<span className="text-sm font-medium text-foreground">
-						{withdraw.isLoadingBalance
-							? '...'
-							: `${withdraw.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${withdraw.withdrawConfig.tokenSymbol}`}
+						{`${withdraw.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${withdraw.withdrawConfig.tokenSymbol}`}
 					</span>
 				</div>
 			</div>

@@ -1,18 +1,27 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useAtomValue } from 'jotai';
 import { toast } from 'sonner';
 import { activeNormalizerAtom, activeDexExchangeAtom } from '@/atoms/dex';
 import { walletAddressAtom } from '@/atoms/user/onboarding';
+import { userSpotBalancesAtom } from '@/atoms/user/balances';
 import { useWalletSigner } from '@/hooks/use-wallet-signer';
 import { classifyTxError } from '@/lib/tx-errors';
-import { useDepositBalance } from '@/components/panels/deposit/hooks/use-deposit-balance';
 
 export function useWithdraw() {
 	const normalizer = useAtomValue(activeNormalizerAtom);
 	const exchange = useAtomValue(activeDexExchangeAtom);
 	const walletAddress = useAtomValue(walletAddressAtom);
 	const { sign } = useWalletSigner();
-	const { balance, isLoading: isLoadingBalance } = useDepositBalance();
+
+	// Read withdrawable from spot balances (fed by spotState WS channel)
+	const spotBalances = useAtomValue(userSpotBalancesAtom);
+	const balance = useMemo(() => {
+		const { tokenSymbol } = normalizer.withdrawConfig;
+		const usdcBalance = spotBalances.find(
+			(spotBalance) => spotBalance.coin === tokenSymbol,
+		);
+		return usdcBalance ? parseFloat(usdcBalance.availableBalance) : 0;
+	}, [spotBalances, normalizer.withdrawConfig]);
 
 	const { withdrawConfig } = normalizer;
 
@@ -86,7 +95,6 @@ export function useWithdraw() {
 		destination,
 		effectiveDestination,
 		isWithdrawing,
-		isLoadingBalance,
 		// Derived
 		balance,
 		parsedAmount,

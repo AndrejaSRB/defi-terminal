@@ -1,12 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useAtomValue } from 'jotai';
-import {
-	Wallet,
-	ArrowLeftRight,
-	CreditCard,
-	ArrowLeft,
-	Coins,
-} from 'lucide-react';
+import { ArrowLeftRight, CreditCard, ArrowLeft, Coins } from 'lucide-react';
 import { useFundWallet } from '@privy-io/react-auth';
 import {
 	Dialog,
@@ -18,13 +12,11 @@ import {
 import { cn } from '@/lib/utils';
 import { activeNormalizerAtom } from '@/atoms/dex';
 import { walletAddressAtom } from '@/atoms/user/onboarding';
-import { getChainName } from '@/services/chains/config';
-import { useDepositBalance } from './hooks/use-deposit-balance';
-import DepositTab from './deposit-tab';
-import CrosschainTab from './crosschain-tab';
+import Widget from '@/components/layout/widget/widget';
+import type { WidgetConfig } from '@/components/layout/widget/types';
 import ExtendedDeposit from './extended/extended-deposit';
 
-type DepositView = 'select' | 'deposit' | 'crosschain' | 'bridge-usdc';
+type DepositView = 'select' | 'crosschain' | 'bridge-usdc';
 
 interface DepositDialogProps {
 	open: boolean;
@@ -35,12 +27,24 @@ export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
 	const [view, setView] = useState<DepositView>('select');
 	const normalizer = useAtomValue(activeNormalizerAtom);
 	const walletAddress = useAtomValue(walletAddressAtom);
-	const { balance, isLoading: isLoadingBalance } = useDepositBalance();
 	const { fundWallet } = useFundWallet();
 
 	const { depositConfig } = normalizer;
 	const methods = depositConfig.methods;
-	const chainName = getChainName(depositConfig.chainId);
+
+	const widgetConfig: WidgetConfig = useMemo(
+		() => ({
+			destinationChainId: depositConfig.chainId,
+			destinationTokenAddress: depositConfig.tokenAddress,
+			destinationTokenSymbol: depositConfig.tokenSymbol,
+			destinationTokenDecimals: depositConfig.tokenDecimals,
+			bridgeAddress: depositConfig.bridgeAddress,
+			minDeposit: depositConfig.minDeposit,
+			directDepositFee: depositConfig.fee,
+			directDepositTime: depositConfig.estimatedTime,
+		}),
+		[depositConfig],
+	);
 
 	const goBack = useCallback(() => setView('select'), []);
 
@@ -48,10 +52,6 @@ export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
 		if (!walletAddress) return;
 		await fundWallet({ address: walletAddress });
 	}, [walletAddress, fundWallet]);
-
-	const handleCrosschainSuccess = useCallback(() => {
-		setView('deposit');
-	}, []);
 
 	const handleOpenChange = useCallback(
 		(newOpen: boolean) => {
@@ -61,14 +61,9 @@ export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
 		[onOpenChange],
 	);
 
-	const balanceDisplay = isLoadingBalance
-		? '...'
-		: `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
 	const viewTitles: Record<DepositView, string> = {
 		select: 'Deposit',
-		deposit: `Deposit ${depositConfig.tokenSymbol}`,
-		crosschain: 'Transfer Crypto',
+		crosschain: 'Deposit & Bridge',
 		'bridge-usdc': 'Deposit USDC',
 	};
 
@@ -100,22 +95,13 @@ export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
 				{/* Method selector */}
 				{view === 'select' && (
 					<div className="space-y-2">
-						{/* Native deposit — HL only */}
-						{methods.includes('native') && (
-							<MethodButton
-								icon={<Wallet className="size-5" />}
-								title={`${depositConfig.tokenSymbol} on ${chainName}`}
-								subtitle={`${balanceDisplay} · Instant`}
-								onClick={() => setView('deposit')}
-							/>
-						)}
-
-						{/* Cross-chain — HL only (LI.FI) */}
-						{methods.includes('cross-chain') && (
+						{/* Deposit & Bridge — HL (LI.FI + direct deposit) */}
+						{(methods.includes('native') ||
+							methods.includes('cross-chain')) && (
 							<MethodButton
 								icon={<ArrowLeftRight className="size-5" />}
-								title="Transfer Crypto"
-								subtitle="Any chain · 1-5 min"
+								title="Deposit & Bridge"
+								subtitle="Any chain · Instant to 5 min"
 								onClick={() => setView('crosschain')}
 							/>
 						)}
@@ -142,10 +128,7 @@ export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
 					</div>
 				)}
 
-				{view === 'deposit' && <DepositTab />}
-				{view === 'crosschain' && (
-					<CrosschainTab onSuccess={handleCrosschainSuccess} />
-				)}
+				{view === 'crosschain' && <Widget config={widgetConfig} />}
 				{view === 'bridge-usdc' && <ExtendedDeposit />}
 			</DialogContent>
 		</Dialog>
