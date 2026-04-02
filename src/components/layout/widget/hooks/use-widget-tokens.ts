@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useAtomValue } from 'jotai';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { walletAddressAtom } from '@/atoms/user/onboarding';
 import {
 	fetchWalletBalances,
@@ -12,74 +13,25 @@ export interface ChainOption {
 	name: string;
 }
 
-// Module-level cache — prevents re-fetching on tab switches / dialog reopens
-let cachedAddress = '';
-let cachedTokens: WalletTokenBalance[] = [];
-let cachedAt = 0;
-let fetchInFlight: Promise<WalletTokenBalance[]> | null = null;
-const CACHE_TTL = 60_000;
+const STALE_TIME = 60_000;
 
 export function useWidgetTokens() {
 	const walletAddress = useAtomValue(walletAddressAtom);
-	const [tokens, setTokens] = useState<WalletTokenBalance[]>(
-		walletAddress === cachedAddress ? cachedTokens : [],
-	);
-	const [isLoading, setIsLoading] = useState(false);
-	const [fetchVersion, setFetchVersion] = useState(0);
+	const queryClient = useQueryClient();
 
-	useEffect(() => {
-		if (!walletAddress) {
-			setTokens([]);
-			return;
-		}
-
-		// Use cache if fresh and not force-refetching
-		if (
-			fetchVersion === 0 &&
-			walletAddress === cachedAddress &&
-			cachedTokens.length > 0 &&
-			Date.now() - cachedAt < CACHE_TTL
-		) {
-			setTokens(cachedTokens);
-			return;
-		}
-
-		// Deduplicate in-flight requests
-		if (!fetchInFlight) {
-			fetchInFlight = fetchWalletBalances(walletAddress).finally(() => {
-				fetchInFlight = null;
-			});
-		}
-
-		let cancelled = false;
-		setIsLoading(true);
-
-		fetchInFlight
-			.then((balances) => {
-				if (cancelled) return;
-				cachedAddress = walletAddress;
-				cachedTokens = balances;
-				cachedAt = Date.now();
-				setTokens(balances);
-			})
-			.catch(() => {
-				if (!cancelled) setTokens([]);
-			})
-			.finally(() => {
-				if (!cancelled) setIsLoading(false);
-			});
-
-		return () => {
-			cancelled = true;
-		};
-	}, [walletAddress, fetchVersion]);
+	const { data: tokens = [], isLoading } = useQuery({
+		queryKey: ['wallet-balances', walletAddress],
+		queryFn: () => fetchWalletBalances(walletAddress!),
+		enabled: !!walletAddress,
+		staleTime: STALE_TIME,
+	});
 
 	const refetch = useCallback(() => {
-		cachedAt = 0; // Invalidate cache
-		setFetchVersion((prev) => prev + 1);
-	}, []);
+		queryClient.invalidateQueries({
+			queryKey: ['wallet-balances', walletAddress],
+		});
+	}, [queryClient, walletAddress]);
 
-	// Derive unique chains from tokens
 	const allChainOptions = useMemo(() => {
 		const seen = new Set<number>();
 		const options: ChainOption[] = [];
