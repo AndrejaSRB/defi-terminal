@@ -1,7 +1,5 @@
-import { THEME_WRAPPER_ID } from '@/atoms/settings';
-
 /**
- * Reads a computed CSS variable from the theme wrapper and converts to hex.
+ * Reads a computed CSS variable from :root and converts to hex.
  * Uses an offscreen canvas to let the browser resolve oklch/hsl/rgb → hex.
  */
 const canvas = document.createElement('canvas');
@@ -10,9 +8,9 @@ canvas.height = 1;
 const ctx = canvas.getContext('2d')!;
 
 export function cssVarToHex(varName: string): string {
-	const el =
-		document.getElementById(THEME_WRAPPER_ID) ?? document.documentElement;
-	const value = getComputedStyle(el).getPropertyValue(varName).trim();
+	const value = getComputedStyle(document.documentElement)
+		.getPropertyValue(varName)
+		.trim();
 	if (!value) return '#000000';
 
 	ctx.clearRect(0, 0, 1, 1);

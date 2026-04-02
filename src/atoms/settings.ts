@@ -129,7 +129,11 @@ const CSS_VAR_MAP: Record<keyof ThemePreset['colors'], string[]> = {
 export const THEME_WRAPPER_ID = 'theme-root';
 
 function getThemeRoot(): HTMLElement {
-	return document.getElementById(THEME_WRAPPER_ID) ?? document.documentElement;
+	// Apply to <html> so Radix portals (rendered outside #theme-root) inherit theme vars.
+	// Also clear any stale inline styles on #theme-root to prevent override conflicts.
+	const themeWrapper = document.getElementById(THEME_WRAPPER_ID);
+	if (themeWrapper) themeWrapper.removeAttribute('style');
+	return document.documentElement;
 }
 
 export function applyTheme(themeId: ThemeId): void {

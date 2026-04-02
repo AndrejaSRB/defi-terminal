@@ -178,18 +178,23 @@ export default function TradingViewChart() {
 		};
 	}, [normalizer, assetMetaReady, retryCount, getPrice]);
 
-	// Live theme sync — only applies when themeId actually changes
+	// Live theme sync — deferred to ensure CSS vars are applied first
 	const prevThemeRef = useRef(themeId);
 	useEffect(() => {
 		if (!isReady || !widgetRef.current || !containerRef.current) return;
 		if (prevThemeRef.current === themeId) return;
 		prevThemeRef.current = themeId;
 
-		try {
-			applyWidgetTheme(widgetRef.current, containerRef.current);
-		} catch (overrideError) {
-			console.warn('[Chart] Failed to apply theme overrides:', overrideError);
-		}
+		// Defer so applyTheme() in useTheme() finishes setting CSS vars first
+		requestAnimationFrame(() => {
+			try {
+				if (widgetRef.current && containerRef.current) {
+					applyWidgetTheme(widgetRef.current, containerRef.current);
+				}
+			} catch (overrideError) {
+				console.warn('[Chart] Failed to apply theme overrides:', overrideError);
+			}
+		});
 	}, [themeId, isReady]);
 
 	// Symbol switch
