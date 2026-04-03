@@ -59,6 +59,8 @@ export const tradingConfigMap = new Map<
 		minPriceChange: string;
 		minOrderSizeChange: string;
 		maxPositionValue: string;
+		minOrderSize: string;
+		limitPriceCap: string;
 	}
 >();
 
@@ -191,6 +193,8 @@ export const extendedNormalizer: DexNormalizer = {
 				minPriceChange: market.tradingConfig.minPriceChange,
 				minOrderSizeChange: market.tradingConfig.minOrderSizeChange,
 				maxPositionValue: market.tradingConfig.maxPositionValue,
+				minOrderSize: market.tradingConfig.minOrderSize,
+				limitPriceCap: market.tradingConfig.limitPriceCap ?? '0.1',
 			});
 
 			assetMetaMap.set(market.name, {

@@ -26,6 +26,8 @@ export interface ExtTradingConfig {
 	maxPositionValue: string;
 	maxLeverage: string;
 	maxNumOrders: string;
+	limitPriceCap?: string;
+	limitPriceFloor?: string;
 }
 
 export interface ExtL2Config {

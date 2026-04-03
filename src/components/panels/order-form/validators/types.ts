@@ -25,4 +25,8 @@ export interface OrderFormValues {
 	tpslEnabled: boolean;
 	tpPrice: number;
 	slPrice: number;
+	/** Market-specific min order size in base asset (e.g. 0.0001 BTC). Optional — skips if undefined. */
+	minOrderSize?: number;
+	/** Market-specific limit price cap as decimal (e.g. 0.1 = 10%). Optional — skips if undefined. */
+	limitPriceCap?: number;
 }

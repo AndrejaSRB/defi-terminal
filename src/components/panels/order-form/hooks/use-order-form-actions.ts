@@ -8,6 +8,7 @@ import {
 	activeDexExchangeAtom,
 	activeNormalizerAtom,
 } from '@/atoms/dex';
+import { tradingConfigMap } from '@/normalizer/extended/extended';
 import {
 	onboardingBlockerAtom,
 	onboardingVersionAtom,
@@ -392,6 +393,7 @@ export function useOrderFormActions(): OrderFormActions {
 		const szMultiplier = 10 ** szDec;
 		sizeInCoin = Math.round(sizeInCoin * szMultiplier) / szMultiplier;
 
+		const marketConfig = tradingConfigMap.get(token);
 		const values: OrderFormValues = {
 			side,
 			type,
@@ -409,6 +411,12 @@ export function useOrderFormActions(): OrderFormActions {
 			tpslEnabled,
 			tpPrice: safeParseFloat(store.get(tpPriceAtom)),
 			slPrice: safeParseFloat(store.get(slPriceAtom)),
+			minOrderSize: marketConfig
+				? parseFloat(marketConfig.minOrderSize)
+				: undefined,
+			limitPriceCap: marketConfig
+				? parseFloat(marketConfig.limitPriceCap)
+				: undefined,
 		};
 
 		const result = validateOrderForm(values);

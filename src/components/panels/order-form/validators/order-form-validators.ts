@@ -121,7 +121,11 @@ export function validateReduceOnly(
 	return null;
 }
 
-export function validateTpPrice(tpPrice: number): ValidationError | null {
+export function validateTpPrice(
+	tpPrice: number,
+	markPrice: number,
+	side: 'long' | 'short',
+): ValidationError | null {
 	const nanError = validateNaN(tpPrice, 'tpPrice', 'Take Profit price');
 	if (nanError) return nanError;
 	if (tpPrice <= 0) {
@@ -130,18 +134,91 @@ export function validateTpPrice(tpPrice: number): ValidationError | null {
 			message: 'Take Profit price must be greater than 0',
 		};
 	}
-	// Direction validation (TP above/below entry) is DEX-specific
-	// and handled server-side. No client-side check.
+	if (markPrice > 0) {
+		if (side === 'long' && tpPrice <= markPrice) {
+			return {
+				field: 'tpPrice',
+				message: 'Take Profit must be above current mark price',
+			};
+		}
+		if (side === 'short' && tpPrice >= markPrice) {
+			return {
+				field: 'tpPrice',
+				message: 'Take Profit must be below current mark price',
+			};
+		}
+	}
 	return null;
 }
 
-export function validateSlPrice(slPrice: number): ValidationError | null {
+export function validateSlPrice(
+	slPrice: number,
+	markPrice: number,
+	entryPrice: number,
+	side: 'long' | 'short',
+): ValidationError | null {
 	const nanError = validateNaN(slPrice, 'slPrice', 'Stop Loss price');
 	if (nanError) return nanError;
 	if (slPrice <= 0) {
 		return {
 			field: 'slPrice',
 			message: 'Stop Loss price must be greater than 0',
+		};
+	}
+	if (markPrice > 0) {
+		if (side === 'long' && slPrice >= markPrice) {
+			return {
+				field: 'slPrice',
+				message: 'Stop Loss must be below current mark price',
+			};
+		}
+		if (side === 'short' && slPrice <= markPrice) {
+			return {
+				field: 'slPrice',
+				message: 'Stop Loss must be above current mark price',
+			};
+		}
+	}
+	// For shorts with limit orders: SL must be above entry price
+	if (side === 'short' && entryPrice > 0 && slPrice <= entryPrice) {
+		return {
+			field: 'slPrice',
+			message: 'Stop Loss must be above entry price for short positions',
+		};
+	}
+	return null;
+}
+
+export function validateMinOrderSize(
+	size: number,
+	minOrderSize?: number,
+): ValidationError | null {
+	if (minOrderSize && size > 0 && size < minOrderSize) {
+		return {
+			field: 'size',
+			message: `Minimum order size is ${minOrderSize}`,
+		};
+	}
+	return null;
+}
+
+export function validateLimitPriceCap(
+	price: number,
+	markPrice: number,
+	side: 'long' | 'short',
+	cap?: number,
+): ValidationError | null {
+	if (!cap || markPrice <= 0) return null;
+	if (side === 'long' && price > markPrice * (1 + cap)) {
+		return {
+			field: 'limitPrice',
+			message: `Buy price is more than ${(cap * 100).toFixed(0)}% above mark price`,
+		};
+	}
+	if (side === 'short' && price < markPrice * (1 - cap)) {
+		return {
+			field: 'limitPrice',
+			message: `Sell price is more than ${(cap * 100).toFixed(0)}% below mark price`,
 		};
 	}
 	return null;
@@ -160,6 +237,10 @@ export function validateOrderForm(values: OrderFormValues): ValidationResult {
 	// Size
 	const sizeError = validateSize(values.size, values.szDecimals);
 	if (sizeError) errors.push(sizeError);
+
+	// Min order size (market-specific)
+	const minSizeError = validateMinOrderSize(values.size, values.minOrderSize);
+	if (minSizeError) errors.push(minSizeError);
 
 	// Min order value
 	const minValueError = validateMinOrderValue(values.orderValue);
@@ -181,6 +262,14 @@ export function validateOrderForm(values: OrderFormValues): ValidationResult {
 		} else {
 			const priceError = validateLimitPrice(values.limitPrice);
 			if (priceError) errors.push(priceError);
+
+			const capError = validateLimitPriceCap(
+				values.limitPrice,
+				values.markPrice,
+				values.side,
+				values.limitPriceCap,
+			);
+			if (capError) errors.push(capError);
 		}
 	}
 
@@ -218,12 +307,24 @@ export function validateOrderForm(values: OrderFormValues): ValidationResult {
 		}
 
 		if (hasTp) {
-			const tpError = validateTpPrice(values.tpPrice);
+			const tpError = validateTpPrice(
+				values.tpPrice,
+				values.markPrice,
+				values.side,
+			);
 			if (tpError) errors.push(tpError);
 		}
 
+		const entryPrice =
+			values.type === 'market' ? values.markPrice : values.limitPrice;
+
 		if (hasSl) {
-			const slError = validateSlPrice(values.slPrice);
+			const slError = validateSlPrice(
+				values.slPrice,
+				values.markPrice,
+				entryPrice,
+				values.side,
+			);
 			if (slError) errors.push(slError);
 		}
 
