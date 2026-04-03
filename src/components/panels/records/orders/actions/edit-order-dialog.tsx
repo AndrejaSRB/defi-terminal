@@ -63,6 +63,7 @@ export const EditOrderDialog = memo(function EditOrderDialog({
 			await exchange.modifyOrder({
 				coin,
 				orderId: order.rawOrderId,
+				side: order.side,
 				price: safeParseFloat(price),
 				size: safeParseFloat(size),
 				reduceOnly: order.reduceOnly === 'Yes',

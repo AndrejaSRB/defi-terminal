@@ -1,7 +1,8 @@
 import { memo, useState, useCallback, useEffect } from 'react';
 import { useAtomValue, useSetAtom, useStore } from 'jotai';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { activeDexExchangeAtom } from '@/atoms/dex';
+import { activeDexExchangeAtom, activeNormalizerAtom } from '@/atoms/dex';
 import { pricesAtom } from '@/atoms/prices';
 import { walletAddressAtom } from '@/atoms/user/onboarding';
 
@@ -24,6 +25,7 @@ import {
 
 export const LimitCloseDialog = memo(function LimitCloseDialog() {
 	const store = useStore();
+	const queryClient = useQueryClient();
 	const action = useAtomValue(activePositionActionAtom);
 	const setAction = useSetAtom(activePositionActionAtom);
 	const setIsClosing = useSetAtom(isClosingPositionAtom);
@@ -40,8 +42,14 @@ export const LimitCloseDialog = memo(function LimitCloseDialog() {
 	useEffect(() => {
 		if (open && coin) {
 			const prices = store.get(pricesAtom);
-			const mid = prices[coin];
-			setPrice(mid ?? '');
+			const mid = safeParseFloat(prices[coin]);
+			if (mid > 0) {
+				const normalizer = store.get(activeNormalizerAtom);
+				const decimals = normalizer.calculatePriceDecimals(mid, coin);
+				setPrice(mid.toFixed(decimals));
+			} else {
+				setPrice('');
+			}
 			setPercent(100);
 		}
 	}, [open, coin, store]);
@@ -86,6 +94,7 @@ export const LimitCloseDialog = memo(function LimitCloseDialog() {
 
 			if (result.status === 'success') {
 				toast.success('Limit close order placed');
+				queryClient.invalidateQueries({ queryKey: ['dex-user-data'] });
 				setAction(null);
 			} else {
 				toast.error(result.message ?? 'Order failed');

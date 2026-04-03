@@ -8,6 +8,7 @@ import { hyperliquidOnboarding } from '@/normalizer/hyperliquid/onboarding';
 import { hyperliquidExchange } from '@/normalizer/hyperliquid/exchange';
 import { extendedNormalizer } from '@/normalizer/extended/extended';
 import { extendedOnboarding } from '@/normalizer/extended/onboarding';
+import { extendedExchange } from '@/normalizer/extended/exchange';
 
 // ── DEX Registry ──
 
@@ -32,7 +33,7 @@ export const DEX_REGISTRY: DexConfig[] = [
 		name: 'Extended',
 		normalizer: extendedNormalizer,
 		onboarding: extendedOnboarding,
-		exchange: null, // TODO: implement
+		exchange: extendedExchange,
 	},
 ];
 

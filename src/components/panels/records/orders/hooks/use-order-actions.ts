@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useAtomValue, useStore } from 'jotai';
 import { atom } from 'jotai';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { activeDexExchangeAtom } from '@/atoms/dex';
 import { userOpenOrdersAtom } from '@/atoms/user/orders';
@@ -13,6 +14,7 @@ export const isProcessingOrderAtom = atom<boolean>(false);
 
 export function useOrderActions() {
 	const store = useStore();
+	const queryClient = useQueryClient();
 	const isProcessing = useAtomValue(isProcessingOrderAtom);
 
 	const checkAgent = useCallback((): boolean => {
@@ -25,7 +27,7 @@ export function useOrderActions() {
 	}, [store]);
 
 	const cancelOrder = useCallback(
-		async (orderId: number, coin: string) => {
+		async (orderId: number, coin: string, externalId?: string | null) => {
 			if (!checkAgent()) return;
 			if (store.get(isProcessingOrderAtom)) return;
 
@@ -40,8 +42,13 @@ export function useOrderActions() {
 			exchange.setWalletAddress(address);
 
 			try {
-				await exchange.cancelOrder({ coin, orderId });
+				await exchange.cancelOrder({
+					coin,
+					orderId,
+					externalId: externalId ?? undefined,
+				});
 				toast.success('Order canceled');
+				queryClient.invalidateQueries({ queryKey: ['dex-user-data'] });
 			} catch (error) {
 				toast.error(
 					error instanceof Error ? error.message : 'Cancel order failed',
@@ -50,7 +57,7 @@ export function useOrderActions() {
 				store.set(isProcessingOrderAtom, false);
 			}
 		},
-		[checkAgent, store],
+		[checkAgent, store, queryClient],
 	);
 
 	const cancelAllOrders = useCallback(async () => {
@@ -72,9 +79,11 @@ export function useOrderActions() {
 			const cancels = orders.map((order) => ({
 				coin: order.coin,
 				orderId: Number(order.id),
+				externalId: order.cloid ?? undefined,
 			}));
 			await exchange.cancelOrders(cancels);
 			toast.success('All orders canceled');
+			queryClient.invalidateQueries({ queryKey: ['dex-user-data'] });
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Cancel all failed');
 		} finally {

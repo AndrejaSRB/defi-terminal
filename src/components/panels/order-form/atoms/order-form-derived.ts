@@ -159,8 +159,8 @@ export const liveTpPriceAtom = atom((get) => {
 	// User typed a price directly — return it as-is
 	if (source === 'price') return get(tpPriceAtom);
 
-	// User typed gain % — recompute price from gain + live mark
-	const entry = get(liveMidPriceAtom);
+	// User typed gain % — recompute price from entry (limit price or mark)
+	const entry = get(effectivePriceAtom);
 	const leverage = get(leverageAtom);
 	const side = get(orderSideAtom);
 	const toggle = get(tpToggleAtom);
@@ -183,7 +183,7 @@ export const liveSlPriceAtom = atom((get) => {
 	const source = get(slSourceAtom);
 	if (source === 'price') return get(slPriceAtom);
 
-	const entry = get(liveMidPriceAtom);
+	const entry = get(effectivePriceAtom);
 	const leverage = get(leverageAtom);
 	const side = get(orderSideAtom);
 	const toggle = get(slToggleAtom);
@@ -207,8 +207,8 @@ export const liveTpGainAtom = atom((get) => {
 	// User typed gain directly — return it as-is
 	if (source === 'gain') return get(tpGainAtom);
 
-	// User typed price — recompute leveraged gain from price vs live mark
-	const entry = get(liveMidPriceAtom);
+	// User typed price — recompute leveraged gain from price vs entry
+	const entry = get(effectivePriceAtom);
 	const leverage = get(leverageAtom);
 	const side = get(orderSideAtom);
 	const toggle = get(tpToggleAtom);
@@ -228,7 +228,7 @@ export const liveSlLossAtom = atom((get) => {
 	const source = get(slSourceAtom);
 	if (source === 'loss') return get(slLossAtom);
 
-	const entry = get(liveMidPriceAtom);
+	const entry = get(effectivePriceAtom);
 	const leverage = get(leverageAtom);
 	const side = get(orderSideAtom);
 	const toggle = get(slToggleAtom);

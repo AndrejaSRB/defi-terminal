@@ -23,11 +23,14 @@ export interface OrderResult {
 export interface CancelOrderParams {
 	coin: string;
 	orderId: number;
+	/** String ID for DEXes with large numeric IDs (e.g. Extended externalId) */
+	externalId?: string;
 }
 
 export interface ModifyOrderParams {
 	coin: string;
 	orderId: number;
+	side: 'buy' | 'sell';
 	price: number;
 	size: number;
 	reduceOnly: boolean;

@@ -1,3 +1,4 @@
+import { useAtomValue } from 'jotai';
 import { useWsConnection } from '@/hooks/market/use-ws-connection';
 import { useDexPrices } from '@/hooks/market/use-dex-prices';
 import { useDexActiveAsset } from '@/hooks/market/use-dex-active-asset';
@@ -16,8 +17,15 @@ import { useDexUserData } from '@/hooks/user/use-dex-user-data';
 import { useDexUserLeverage } from '@/hooks/user/use-dex-user-leverage';
 import { useSyncWalletAddress } from '@/hooks/user/use-sync-wallet-address';
 import { useDocumentTitle } from '@/hooks/use-document-title';
+import { activeDexIdAtom } from '@/atoms/dex';
+import { warmupSigner } from '@/normalizer/extended/services/signer-warmup';
 
 export function DexProvider({ children }: { children: React.ReactNode }) {
+	const dexId = useAtomValue(activeDexIdAtom);
+	if (dexId === 'extended') {
+		warmupSigner();
+	}
+
 	useWsConnection();
 	useSyncWalletAddress();
 	useDexPrices();

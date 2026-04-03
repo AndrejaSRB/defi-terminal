@@ -27,6 +27,7 @@ import type {
 	ExtOrderBookResponse,
 	ExtTradesResponse,
 	ExtCandlesResponse,
+	ExtL2Config,
 } from './types/api';
 import {
 	parseOrderBook,
@@ -49,8 +50,17 @@ import { extTokenCategories } from './utils/token-categories';
 import { EXTENDED_CONFIG } from './config';
 
 // Module-level caches — populated by init()
-const assetPrecisionMap = new Map<string, number>();
+export const assetPrecisionMap = new Map<string, number>();
 const collateralPrecisionMap = new Map<string, number>();
+export const l2ConfigMap = new Map<string, ExtL2Config>();
+export const tradingConfigMap = new Map<
+	string,
+	{
+		minPriceChange: string;
+		minOrderSizeChange: string;
+		maxPositionValue: string;
+	}
+>();
 
 async function fetchJson<T>(url: string): Promise<T> {
 	const response = await fetch(url);
@@ -163,6 +173,8 @@ export const extendedNormalizer: DexNormalizer = {
 		const assetMetaMap = new Map<string, AssetMeta>();
 		assetPrecisionMap.clear();
 		collateralPrecisionMap.clear();
+		l2ConfigMap.clear();
+		tradingConfigMap.clear();
 		setAssetNames(result.data);
 
 		for (const market of result.data) {
@@ -170,6 +182,16 @@ export const extendedNormalizer: DexNormalizer = {
 
 			assetPrecisionMap.set(market.name, market.assetPrecision);
 			collateralPrecisionMap.set(market.name, market.collateralAssetPrecision);
+
+			if (market.l2Config) {
+				l2ConfigMap.set(market.name, market.l2Config);
+			}
+
+			tradingConfigMap.set(market.name, {
+				minPriceChange: market.tradingConfig.minPriceChange,
+				minOrderSizeChange: market.tradingConfig.minOrderSizeChange,
+				maxPositionValue: market.tradingConfig.maxPositionValue,
+			});
 
 			assetMetaMap.set(market.name, {
 				name: market.name,
@@ -231,9 +253,14 @@ export const extendedNormalizer: DexNormalizer = {
 		return formatSize(value, precision);
 	},
 
-	calculatePriceDecimals: (value, coin) => {
+	calculatePriceDecimals: (_value, coin) => {
+		const config = tradingConfigMap.get(coin);
+		if (config) {
+			const dotIndex = config.minPriceChange.indexOf('.');
+			if (dotIndex !== -1) return config.minPriceChange.length - dotIndex - 1;
+		}
 		const maxDecimals = collateralPrecisionMap.get(coin) ?? 6;
-		return calculatePriceDecimals(value, maxDecimals);
+		return calculatePriceDecimals(_value, maxDecimals);
 	},
 
 	createOrderBookAccumulator: () => new OrderBookAccumulator(),

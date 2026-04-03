@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useAtomValue, useSetAtom, useStore } from 'jotai';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { activeDexExchangeAtom } from '@/atoms/dex';
 import { pricesAtom } from '@/atoms/prices';
@@ -21,6 +22,7 @@ import {
 
 export function usePositionActions() {
 	const store = useStore();
+	const queryClient = useQueryClient();
 	const isClosing = useAtomValue(isClosingPositionAtom);
 	const setAction = useSetAtom(activePositionActionAtom);
 	const setIsClosing = useSetAtom(isClosingPositionAtom);
@@ -84,6 +86,7 @@ export function usePositionActions() {
 
 				if (result.status === 'success') {
 					toast.success(`Position closed: ${data.coin}`);
+					queryClient.invalidateQueries({ queryKey: ['dex-user-data'] });
 				} else {
 					toast.error(result.message ?? 'Close failed');
 				}
@@ -232,6 +235,7 @@ export function usePositionActions() {
 			} else {
 				toast.success('All positions closed');
 			}
+			queryClient.invalidateQueries({ queryKey: ['dex-user-data'] });
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Close all failed');
 		} finally {

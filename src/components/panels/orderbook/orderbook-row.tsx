@@ -1,10 +1,12 @@
 import { memo, useCallback } from 'react';
-import { useSetAtom } from 'jotai';
+import { useSetAtom, useAtomValue } from 'jotai';
 import { cn } from '@/lib/utils';
 import {
 	orderTypeAtom,
 	limitPriceAtom,
 } from '@/components/panels/order-form/atoms/order-form-atoms';
+import { activeNormalizerAtom } from '@/atoms/dex';
+import { activeTokenAtom } from '@/atoms/active-token';
 import type { FormattedLevel } from './hooks/use-orderbook-data';
 
 const ASK_COLOR = 'rgba(235, 54, 90, 0.15)';
@@ -17,11 +19,14 @@ export const OrderBookRow = memo(function OrderBookRow({
 }) {
 	const setOrderType = useSetAtom(orderTypeAtom);
 	const setLimitPrice = useSetAtom(limitPriceAtom);
+	const normalizer = useAtomValue(activeNormalizerAtom);
+	const token = useAtomValue(activeTokenAtom);
 
 	const handleClick = useCallback(() => {
 		setOrderType('limit');
-		setLimitPrice(level.rawPrice.toString());
-	}, [level.rawPrice, setOrderType, setLimitPrice]);
+		const decimals = normalizer.calculatePriceDecimals(level.rawPrice, token);
+		setLimitPrice(level.rawPrice.toFixed(decimals));
+	}, [level.rawPrice, setOrderType, setLimitPrice, normalizer, token]);
 
 	const isAsk = level.side === 'ask';
 

@@ -30,10 +30,6 @@ export function useWsConnection() {
 	useEffect(() => {
 		let cancelled = false;
 
-		// Navigate to the DEX's default token
-		store.set(activeTokenAtom, normalizer.defaultToken);
-		window.history.replaceState(null, '', `/${normalizer.defaultToken}`);
-
 		// Clear stale data from previous DEX
 		setAssetMeta(new Map());
 		setAllAssetCtxs(new Map());
@@ -56,6 +52,13 @@ export function useWsConnection() {
 				const meta = await normalizer.init();
 				if (cancelled) return;
 				setAssetMeta(meta);
+
+				// Resolve token: keep URL token if it exists on this DEX, else default
+				const urlToken = window.location.pathname.replace('/', '');
+				const token =
+					urlToken && meta.has(urlToken) ? urlToken : normalizer.defaultToken;
+				store.set(activeTokenAtom, token);
+				window.history.replaceState(null, '', `/${token}`);
 
 				const assetCtxs = await normalizer.fetchAllAssetCtxs();
 				if (cancelled) return;

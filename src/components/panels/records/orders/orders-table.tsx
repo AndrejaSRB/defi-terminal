@@ -21,7 +21,7 @@ const COLUMNS = [
 interface OrdersTableProps {
 	orders: FormattedOrder[];
 	isProcessing: boolean;
-	onCancel: (orderId: number, coin: string) => void;
+	onCancel: (orderId: number, coin: string, externalId?: string | null) => void;
 	onCancelAll: () => void;
 	onEdit: (order: FormattedOrder) => void;
 }
@@ -143,7 +143,9 @@ export function OrdersTable({
 								<button
 									type="button"
 									disabled={isProcessing}
-									onClick={() => onCancel(order.rawOrderId, order.coin)}
+									onClick={() =>
+										onCancel(order.rawOrderId, order.coin, order.rawExternalId)
+									}
 									className="text-primary transition-colors hover:text-primary/80 disabled:opacity-50"
 								>
 									Cancel

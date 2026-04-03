@@ -1,5 +1,6 @@
 import { memo, useState, useCallback, useEffect } from 'react';
 import { useAtomValue, useSetAtom, useStore } from 'jotai';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { activeDexExchangeAtom, activeNormalizerAtom } from '@/atoms/dex';
 import { pricesAtom } from '@/atoms/prices';
@@ -24,6 +25,7 @@ import {
 
 export const TpslEditDialog = memo(function TpslEditDialog() {
 	const store = useStore();
+	const queryClient = useQueryClient();
 	const action = useAtomValue(activePositionActionAtom);
 	const setAction = useSetAtom(activePositionActionAtom);
 	const setIsClosing = useSetAtom(isClosingPositionAtom);
@@ -211,6 +213,7 @@ export const TpslEditDialog = memo(function TpslEditDialog() {
 			});
 
 			toast.success('TP/SL set for position');
+			queryClient.invalidateQueries({ queryKey: ['dex-user-data'] });
 			setAction(null);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Set TP/SL failed');

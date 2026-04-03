@@ -58,6 +58,7 @@ export interface FormattedOrder {
 	isLimitOrder: boolean;
 	isPositionTpsl: boolean;
 	rawOrderId: number;
+	rawExternalId: string | null;
 	rawPrice: number;
 	rawSize: number;
 	rawOrigSize: number;
@@ -145,6 +146,7 @@ export function useOrdersData() {
 				isLimitOrder: isLimit,
 				isPositionTpsl: order.isPositionTpsl,
 				rawOrderId: Number(order.id),
+				rawExternalId: order.cloid,
 				rawPrice: order.price,
 				rawSize: order.size,
 				rawOrigSize: order.origSize,

@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useAtomValue, useSetAtom, useStore } from 'jotai';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { activeTokenAtom } from '@/atoms/active-token';
-import { activeDexOnboardingAtom, activeDexExchangeAtom } from '@/atoms/dex';
+import {
+	activeDexOnboardingAtom,
+	activeDexExchangeAtom,
+	activeNormalizerAtom,
+} from '@/atoms/dex';
 import {
 	onboardingBlockerAtom,
 	onboardingVersionAtom,
@@ -69,6 +74,7 @@ export interface OrderFormActions {
 
 export function useOrderFormActions(): OrderFormActions {
 	const store = useStore();
+	const queryClient = useQueryClient();
 	const token = useAtomValue(activeTokenAtom);
 	const prevTokenRef = useRef(token);
 	const { sign, signMessage } = useWalletSigner();
@@ -138,7 +144,15 @@ export function useOrderFormActions(): OrderFormActions {
 				const currentLimit = store.get(limitPriceAtom);
 				if (!currentLimit) {
 					const mark = store.get(markPriceAtom);
-					if (mark > 0) setLimitPrice(mark.toString());
+					if (mark > 0) {
+						const normalizer = store.get(activeNormalizerAtom);
+						const activeToken = store.get(activeTokenAtom);
+						const decimals = normalizer.calculatePriceDecimals(
+							mark,
+							activeToken,
+						);
+						setLimitPrice(mark.toFixed(decimals));
+					}
 				}
 			}
 		},
@@ -438,6 +452,7 @@ export function useOrderFormActions(): OrderFormActions {
 
 			if (orderResult.status === 'success') {
 				toast.success(orderResult.message ?? 'Order placed');
+				queryClient.invalidateQueries({ queryKey: ['dex-user-data'] });
 			} else {
 				toast.error(orderResult.message ?? 'Order failed');
 			}
@@ -448,7 +463,7 @@ export function useOrderFormActions(): OrderFormActions {
 		} finally {
 			store.set(isSubmittingAtom, false);
 		}
-	}, [store, sign]);
+	}, [store, sign, queryClient]);
 
 	return {
 		setSide,

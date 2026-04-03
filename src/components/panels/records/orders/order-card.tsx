@@ -6,7 +6,7 @@ import type { FormattedOrder } from './hooks/use-orders-data';
 interface OrderCardProps {
 	order: FormattedOrder;
 	isProcessing: boolean;
-	onCancel: (orderId: number, coin: string) => void;
+	onCancel: (orderId: number, coin: string, externalId?: string | null) => void;
 }
 
 export function OrderCard({ order, isProcessing, onCancel }: OrderCardProps) {
@@ -67,7 +67,9 @@ export function OrderCard({ order, isProcessing, onCancel }: OrderCardProps) {
 				<button
 					type="button"
 					disabled={isProcessing}
-					onClick={() => onCancel(order.rawOrderId, order.coin)}
+					onClick={() =>
+						onCancel(order.rawOrderId, order.coin, order.rawExternalId)
+					}
 					className="text-primary transition-colors hover:text-primary/80 disabled:opacity-50"
 				>
 					Cancel

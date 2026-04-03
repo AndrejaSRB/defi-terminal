@@ -63,29 +63,15 @@ export function validateLeverage(
 	return null;
 }
 
-export function validateLimitPrice(
-	price: number,
-	markPrice: number,
-	side: 'long' | 'short',
-): ValidationError | null {
+export function validateLimitPrice(price: number): ValidationError | null {
 	if (price <= 0) {
 		return {
 			field: 'limitPrice',
 			message: 'Limit price must be greater than 0',
 		};
 	}
-	if (side === 'long' && price > markPrice * 1.1) {
-		return {
-			field: 'limitPrice',
-			message: 'Limit buy price is more than 10% above mark price',
-		};
-	}
-	if (side === 'short' && price < markPrice * 0.9) {
-		return {
-			field: 'limitPrice',
-			message: 'Limit sell price is more than 10% below mark price',
-		};
-	}
+	// Server-side validation handles DEX-specific price caps.
+	// No client-side cap — Extended and Hyperliquid have different limits.
 	return null;
 }
 
@@ -135,11 +121,7 @@ export function validateReduceOnly(
 	return null;
 }
 
-export function validateTpPrice(
-	tpPrice: number,
-	currentPrice: number,
-	side: 'long' | 'short',
-): ValidationError | null {
+export function validateTpPrice(tpPrice: number): ValidationError | null {
 	const nanError = validateNaN(tpPrice, 'tpPrice', 'Take Profit price');
 	if (nanError) return nanError;
 	if (tpPrice <= 0) {
@@ -148,44 +130,18 @@ export function validateTpPrice(
 			message: 'Take Profit price must be greater than 0',
 		};
 	}
-	if (side === 'long' && tpPrice <= currentPrice) {
-		return {
-			field: 'tpPrice',
-			message: 'Take Profit must be higher than current price',
-		};
-	}
-	if (side === 'short' && tpPrice >= currentPrice) {
-		return {
-			field: 'tpPrice',
-			message: 'Take Profit must be lower than current price',
-		};
-	}
+	// Direction validation (TP above/below entry) is DEX-specific
+	// and handled server-side. No client-side check.
 	return null;
 }
 
-export function validateSlPrice(
-	slPrice: number,
-	currentPrice: number,
-	side: 'long' | 'short',
-): ValidationError | null {
+export function validateSlPrice(slPrice: number): ValidationError | null {
 	const nanError = validateNaN(slPrice, 'slPrice', 'Stop Loss price');
 	if (nanError) return nanError;
 	if (slPrice <= 0) {
 		return {
 			field: 'slPrice',
 			message: 'Stop Loss price must be greater than 0',
-		};
-	}
-	if (side === 'long' && slPrice >= currentPrice) {
-		return {
-			field: 'slPrice',
-			message: 'Stop Loss must be lower than current price',
-		};
-	}
-	if (side === 'short' && slPrice <= currentPrice) {
-		return {
-			field: 'slPrice',
-			message: 'Stop Loss must be higher than current price',
 		};
 	}
 	return null;
@@ -223,11 +179,7 @@ export function validateOrderForm(values: OrderFormValues): ValidationResult {
 		if (nanError) {
 			errors.push(nanError);
 		} else {
-			const priceError = validateLimitPrice(
-				values.limitPrice,
-				values.markPrice,
-				values.side,
-			);
+			const priceError = validateLimitPrice(values.limitPrice);
 			if (priceError) errors.push(priceError);
 		}
 	}
@@ -265,24 +217,13 @@ export function validateOrderForm(values: OrderFormValues): ValidationResult {
 			});
 		}
 
-		const effectivePrice =
-			values.type === 'market' ? values.markPrice : values.limitPrice;
-
 		if (hasTp) {
-			const tpError = validateTpPrice(
-				values.tpPrice,
-				effectivePrice,
-				values.side,
-			);
+			const tpError = validateTpPrice(values.tpPrice);
 			if (tpError) errors.push(tpError);
 		}
 
 		if (hasSl) {
-			const slError = validateSlPrice(
-				values.slPrice,
-				effectivePrice,
-				values.side,
-			);
+			const slError = validateSlPrice(values.slPrice);
 			if (slError) errors.push(slError);
 		}
 

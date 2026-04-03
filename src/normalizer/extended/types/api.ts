@@ -28,6 +28,14 @@ export interface ExtTradingConfig {
 	maxNumOrders: string;
 }
 
+export interface ExtL2Config {
+	type: string;
+	collateralId: string;
+	syntheticId: string;
+	syntheticResolution: number;
+	collateralResolution: number;
+}
+
 export interface ExtMarket {
 	name: string;
 	assetName: string;
@@ -38,6 +46,7 @@ export interface ExtMarket {
 	status: string;
 	marketStats: ExtMarketStats;
 	tradingConfig: ExtTradingConfig;
+	l2Config: ExtL2Config;
 }
 
 export interface ExtMarketsResponse {
