@@ -37,7 +37,10 @@ import {
 } from './utils/parser';
 import { setUniverseOrder } from '@/services/hyperliquid/order-builder';
 import { hlGetTokenImageUrl } from './utils/token-images';
-import { hlTokenCategories } from './utils/token-categories';
+import {
+	fetchAnnotations,
+	buildTokenCategories,
+} from './utils/token-categories';
 
 // ── HL-specific channel descriptor ──────────────────────────────────
 type HLChannelDescriptor =
@@ -59,6 +62,7 @@ const HL_INFO_URL = 'https://api.hyperliquid.xyz/info';
 
 // Module-level caches — populated by init(), read by formatters.
 const szDecimalsMap = new Map<string, number>();
+let dynamicCategories = buildTokenCategories();
 
 export function getSzDecimals(coin: string): number {
 	return szDecimalsMap.get(coin) ?? 2;
@@ -203,7 +207,9 @@ export const hyperliquidNormalizer: DexNormalizer = {
 		estimatedTime: '~5 min',
 		minWithdraw: 2,
 	},
-	tokenCategories: hlTokenCategories,
+	get tokenCategories() {
+		return dynamicCategories;
+	},
 	getTokenImageUrl: hlGetTokenImageUrl,
 
 	deserialize: (data: unknown) =>
@@ -245,6 +251,10 @@ export const hyperliquidNormalizer: DexNormalizer = {
 
 		// Share universe order with order builder for asset index lookups
 		setUniverseOrder(universeOrder);
+
+		// Fetch token annotations for dynamic categories (non-blocking)
+		await fetchAnnotations();
+		dynamicCategories = buildTokenCategories();
 
 		return assetMetaMap;
 	},
