@@ -10,6 +10,12 @@ import {
 	splitSignature,
 } from '@/services/hyperliquid/agent';
 import { approveAgent, fetchAgents } from '@/services/hyperliquid/exchange';
+import {
+	type AbstractionMode,
+	fetchUserAbstraction,
+	buildSetAbstractionTypedData,
+	setUserAbstraction,
+} from '@/services/hyperliquid/abstraction';
 
 const AGENT_STORAGE_PREFIX = 'hl-agent';
 const AGENT_NAME = 'AT Agent';
@@ -55,6 +61,16 @@ function isAgentValid(agent: StoredAgent): boolean {
 	return agent.validUntil > Date.now() + 5 * 60 * 1000;
 }
 
+// ── Abstraction Mode Cache ──────────────────────────────────────────
+// Cached in module scope — fetched once per session when wallet connects.
+let cachedAbstraction: AbstractionMode = 'disabled';
+
+export async function checkAbstractionMode(
+	walletAddress: string,
+): Promise<void> {
+	cachedAbstraction = await fetchUserAbstraction(walletAddress);
+}
+
 // ── Onboarding ──────────────────────────────────────────────────────
 
 export const hyperliquidOnboarding: DexOnboarding = {
@@ -62,6 +78,7 @@ export const hyperliquidOnboarding: DexOnboarding = {
 		const hasDeposited = totalRawUsd > 0;
 		const stored = getStoredAgent(walletAddress);
 		const hasValidAgent = stored !== null && isAgentValid(stored);
+		const abstractionEnabled = cachedAbstraction !== 'disabled';
 
 		return [
 			{
@@ -72,7 +89,7 @@ export const hyperliquidOnboarding: DexOnboarding = {
 			{
 				id: 'agent',
 				label: 'Enable Trading',
-				status: hasValidAgent ? 'ready' : 'pending',
+				status: hasValidAgent && abstractionEnabled ? 'ready' : 'pending',
 			},
 		];
 	},
@@ -83,6 +100,12 @@ export const hyperliquidOnboarding: DexOnboarding = {
 		}
 
 		if (stepId === 'agent') {
+			// If agent already exists, just ensure unified account is enabled
+			const existingAgent = getStoredAgent(walletAddress);
+			if (existingAgent && isAgentValid(existingAgent)) {
+				await enableUnifiedAccount(walletAddress, sign);
+				return;
+			}
 			// 1. Generate agent wallet
 			const agent = createAgentWallet();
 
@@ -123,6 +146,9 @@ export const hyperliquidOnboarding: DexOnboarding = {
 				address: agent.address,
 				validUntil,
 			});
+
+			// 8. Enable unified account (HIP-3) if not already active
+			await enableUnifiedAccount(walletAddress, sign);
 		}
 	},
 
@@ -170,6 +196,41 @@ export async function validateAgent(
 	}
 
 	return stored;
+}
+
+/**
+ * Enable unified account (HIP-3) if currently disabled.
+ * Allows trading all market types with a single balance.
+ * Silently skips if already enabled or if the check/set fails.
+ */
+async function enableUnifiedAccount(
+	walletAddress: string,
+	sign: (typedData: unknown) => Promise<string>,
+): Promise<void> {
+	try {
+		const currentMode = await fetchUserAbstraction(walletAddress);
+		if (currentMode !== 'disabled') return;
+
+		const nonce = Date.now();
+		const typedData = buildSetAbstractionTypedData(
+			walletAddress,
+			'unifiedAccount',
+			nonce,
+		);
+		const rawSig = await sign(typedData);
+		const { r, s, v } = splitSignature(rawSig as `0x${string}`);
+
+		await setUserAbstraction({
+			userAddress: walletAddress,
+			mode: 'unifiedAccount',
+			nonce,
+			signature: { r, s, v },
+		});
+		cachedAbstraction = 'unifiedAccount';
+	} catch (error) {
+		// Non-critical — user can still trade crypto perps without unified account
+		console.warn('[Onboarding] Failed to enable unified account:', error);
+	}
 }
 
 export { getStoredAgent, removeStoredAgent };

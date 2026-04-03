@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useAtomValue } from 'jotai';
 import { useWsConnection } from '@/hooks/market/use-ws-connection';
 import { useDexPrices } from '@/hooks/market/use-dex-prices';
@@ -19,12 +20,23 @@ import { useSyncWalletAddress } from '@/hooks/user/use-sync-wallet-address';
 import { useDocumentTitle } from '@/hooks/use-document-title';
 import { activeDexIdAtom } from '@/atoms/dex';
 import { warmupSigner } from '@/normalizer/extended/services/signer-warmup';
+import { checkAbstractionMode } from '@/normalizer/hyperliquid/onboarding';
+import { useAuth } from '@/hooks/use-auth';
 
 export function DexProvider({ children }: { children: React.ReactNode }) {
 	const dexId = useAtomValue(activeDexIdAtom);
+	const { walletAddress } = useAuth();
+
 	if (dexId === 'extended') {
 		warmupSigner();
 	}
+
+	// Check HIP-3 abstraction mode when HL wallet connects
+	useEffect(() => {
+		if (dexId === 'hyperliquid' && walletAddress) {
+			checkAbstractionMode(walletAddress);
+		}
+	}, [dexId, walletAddress]);
 
 	useWsConnection();
 	useSyncWalletAddress();

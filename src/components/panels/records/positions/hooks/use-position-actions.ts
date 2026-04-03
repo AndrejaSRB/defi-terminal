@@ -71,6 +71,12 @@ export function usePositionActions() {
 			try {
 				const prices = store.get(pricesAtom);
 				const markPrice = safeParseFloat(prices[data.coin]);
+				if (markPrice <= 0) {
+					toast.error('Price not available. Please try again.');
+					setIsClosing(false);
+					setAction(null);
+					return;
+				}
 				// Close side is opposite of position side
 				const closeSide = data.side === 'LONG' ? 'sell' : 'buy';
 
