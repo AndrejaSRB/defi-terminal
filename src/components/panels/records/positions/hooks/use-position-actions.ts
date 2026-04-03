@@ -256,6 +256,7 @@ export function usePositionActions() {
 				type: 'tpsl',
 				tpOrderId: position.tpOrderId,
 				slOrderId: position.slOrderId,
+				tpslExternalId: position.tpslExternalId,
 				tpPrice: position.rawTpPrice,
 				slPrice: position.rawSlPrice,
 			});

@@ -27,6 +27,7 @@ export interface FormattedPosition {
 	sl: string | null;
 	tpOrderId: number | null;
 	slOrderId: number | null;
+	tpslExternalId: string | null;
 	rawSize: number;
 	rawEntryPrice: number;
 	rawMarkPrice: number;
@@ -39,6 +40,7 @@ interface TpslEntry {
 	tpOrderId: number | null;
 	sl: number | null;
 	slOrderId: number | null;
+	externalId: string | null;
 }
 
 export function usePositionsData() {
@@ -48,27 +50,39 @@ export function usePositionsData() {
 	const normalizer = useAtomValue(activeNormalizerAtom);
 
 	const formatted = useMemo(() => {
-		// Build TP/SL map with order IDs for cancel support
+		// Build TP/SL map with order IDs for cancel support.
+		// Extended: single TPSL order with nested tp/sl fields.
+		// Hyperliquid: separate tp_market/sl_market orders.
 		const tpslMap = new Map<string, TpslEntry>();
 		for (const order of openOrders) {
-			if (order.orderType === 'tp_market' || order.orderType === 'tp') {
-				const entry = tpslMap.get(order.coin) ?? {
-					tp: null,
-					tpOrderId: null,
-					sl: null,
-					slOrderId: null,
-				};
+			const entry = tpslMap.get(order.coin) ?? {
+				tp: null,
+				tpOrderId: null,
+				sl: null,
+				slOrderId: null,
+				externalId: null,
+			};
+
+			if (order.isPositionTpsl) {
+				// Combined TPSL order (Extended): read tp/sl from order fields
+				if (order.tp) {
+					entry.tp = order.tp;
+					entry.tpOrderId = Number(order.id);
+					entry.externalId = order.cloid;
+				}
+				if (order.sl) {
+					entry.sl = order.sl;
+					entry.slOrderId = Number(order.id);
+					entry.externalId = order.cloid;
+				}
+				tpslMap.set(order.coin, entry);
+			} else if (order.orderType === 'tp_market' || order.orderType === 'tp') {
+				// Separate TP order (Hyperliquid)
 				entry.tp = order.triggerPrice;
 				entry.tpOrderId = Number(order.id);
 				tpslMap.set(order.coin, entry);
-			}
-			if (order.orderType === 'sl_market' || order.orderType === 'sl') {
-				const entry = tpslMap.get(order.coin) ?? {
-					tp: null,
-					tpOrderId: null,
-					sl: null,
-					slOrderId: null,
-				};
+			} else if (order.orderType === 'sl_market' || order.orderType === 'sl') {
+				// Separate SL order (Hyperliquid)
 				entry.sl = order.triggerPrice;
 				entry.slOrderId = Number(order.id);
 				tpslMap.set(order.coin, entry);
@@ -124,6 +138,7 @@ export function usePositionsData() {
 						: null,
 				tpOrderId: tpsl?.tpOrderId ?? null,
 				slOrderId: tpsl?.slOrderId ?? null,
+				tpslExternalId: tpsl?.externalId ?? null,
 				rawSize: size,
 				rawEntryPrice: entry,
 				rawMarkPrice: mark,

@@ -12,6 +12,8 @@ export interface PositionActionData {
 	// Existing TP/SL order IDs (for cancel)
 	tpOrderId?: number | null;
 	slOrderId?: number | null;
+	// External ID for combined TPSL orders (Extended)
+	tpslExternalId?: string | null;
 	// Existing TP/SL prices
 	tpPrice?: number | null;
 	slPrice?: number | null;

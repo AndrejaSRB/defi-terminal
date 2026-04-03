@@ -49,7 +49,7 @@ export interface ExtendedOrderPayload {
 	settlement?: SettlementResult['settlement'];
 	reduceOnly: boolean;
 	postOnly: boolean;
-	selfTradeProtectionLevel: string;
+	selfTradeProtectionLevel?: string;
 	cancelId?: string;
 	trigger?: {
 		triggerPrice: string;
@@ -77,13 +77,15 @@ export async function buildSettlement(params: {
 	account: StoredExtendedAccount;
 	feeRate: string;
 	salt?: number;
+	/** Pre-computed order expiration to keep settlement and REST body in sync */
+	orderExpiration?: number;
 	/** For TP/SL: let the signer compute entire position size */
 	maxPositionValue?: string;
 	quantityPrecision?: number;
 }): Promise<SettlementResult> {
 	const { side, price, qty, l2Config, account, feeRate } = params;
 
-	const orderExpiration = calcOrderExpiration();
+	const orderExpiration = params.orderExpiration ?? calcOrderExpiration();
 	const settlementExpiration =
 		orderExpiration + SETTLEMENT_BUFFER_DAYS * SECONDS_PER_DAY;
 	const salt = params.salt ?? generateOrderNonce();
@@ -129,6 +131,7 @@ export async function buildTpSlSettlement(params: {
 	feeRate: string;
 	isPositionTpSl?: boolean;
 	salt?: number;
+	orderExpiration?: number;
 	maxPositionValue?: string;
 	quantityPrecision?: number;
 }): Promise<TpSlSubObject> {
@@ -226,14 +229,20 @@ export async function buildOrderPayload(params: {
 	// TP/SL qty computed by the signer with Decimal precision (maxPositionValue * 50 / price)
 	const maxPosStr = String(maxPositionValue);
 
-	// Build TP/SL settlements in parallel with main.
-	const tpExecPrice = orderParams.tp ? execPrice(orderParams.tp) : undefined;
-	const slExecPrice = orderParams.sl ? execPrice(orderParams.sl) : undefined;
+	// Round trigger prices first, then derive execution from rounded values.
+	const tpTrigger = orderParams.tp
+		? truncateToTickSize(orderParams.tp, minPriceChange)
+		: undefined;
+	const slTrigger = orderParams.sl
+		? truncateToTickSize(orderParams.sl, minPriceChange)
+		: undefined;
+	const tpExecPrice = tpTrigger ? execPrice(tpTrigger) : undefined;
+	const slExecPrice = slTrigger ? execPrice(slTrigger) : undefined;
 
 	const tpPromise =
-		orderParams.tp && tpExecPrice
+		tpTrigger && tpExecPrice
 			? buildTpSlSettlement({
-					triggerPrice: toCleanString(orderParams.tp, minPriceChange),
+					triggerPrice: toCleanString(tpTrigger, minPriceChange),
 					executionPrice: tpExecPrice,
 					side: tpSlCloseSide,
 					qty: '0',
@@ -248,9 +257,9 @@ export async function buildOrderPayload(params: {
 			: undefined;
 
 	const slPromise =
-		orderParams.sl && slExecPrice
+		slTrigger && slExecPrice
 			? buildTpSlSettlement({
-					triggerPrice: toCleanString(orderParams.sl, minPriceChange),
+					triggerPrice: toCleanString(slTrigger, minPriceChange),
 					executionPrice: slExecPrice,
 					side: tpSlCloseSide,
 					qty: '0',
@@ -334,8 +343,9 @@ export async function buildPositionTpSlPayload(params: {
 		minPriceChange,
 	} = params;
 
-	// SDK reuses the same nonce for all settlements
+	// Compute expiration ONCE — settlement signing and REST body must use the same value.
 	const nonce = generateOrderNonce();
+	const orderExpiration = calcOrderExpiration();
 
 	// Execution price has 0.75% slippage from trigger, truncated to tick
 	const execPrice = (trigger: number): string => {
@@ -348,13 +358,18 @@ export async function buildPositionTpSlPayload(params: {
 
 	const maxPosStr = String(maxPositionValue);
 
-	const tpExecPrice = tp ? execPrice(tp) : undefined;
-	const slExecPrice = sl ? execPrice(sl) : undefined;
+	// Round trigger prices FIRST, then derive execution prices from the rounded values.
+	// Both must be consistent — server derives execution from the rounded trigger.
+	const tpTrigger = tp ? truncateToTickSize(tp, minPriceChange) : undefined;
+	const slTrigger = sl ? truncateToTickSize(sl, minPriceChange) : undefined;
+	const tpExecPrice = tpTrigger ? execPrice(tpTrigger) : undefined;
+	const slExecPrice = slTrigger ? execPrice(slTrigger) : undefined;
 
+	// Same nonce and expiration for all settlements
 	const tpPromise =
-		tp && tpExecPrice
+		tpTrigger && tpExecPrice
 			? buildTpSlSettlement({
-					triggerPrice: toCleanString(tp, minPriceChange),
+					triggerPrice: toCleanString(tpTrigger, minPriceChange),
 					executionPrice: tpExecPrice,
 					side,
 					qty: '0',
@@ -363,15 +378,16 @@ export async function buildPositionTpSlPayload(params: {
 					feeRate: takerFeeRate,
 					isPositionTpSl: true,
 					salt: nonce,
+					orderExpiration,
 					maxPositionValue: maxPosStr,
 					quantityPrecision,
 				})
 			: undefined;
 
 	const slPromise =
-		sl && slExecPrice
+		slTrigger && slExecPrice
 			? buildTpSlSettlement({
-					triggerPrice: toCleanString(sl, minPriceChange),
+					triggerPrice: toCleanString(slTrigger, minPriceChange),
 					executionPrice: slExecPrice,
 					side,
 					qty: '0',
@@ -380,6 +396,7 @@ export async function buildPositionTpSlPayload(params: {
 					feeRate: takerFeeRate,
 					isPositionTpSl: true,
 					salt: nonce,
+					orderExpiration,
 					maxPositionValue: maxPosStr,
 					quantityPrecision,
 				})
@@ -388,7 +405,6 @@ export async function buildPositionTpSlPayload(params: {
 	const [takeProfit, stopLoss] = await Promise.all([tpPromise, slPromise]);
 
 	// Position TP/SL: main envelope has qty=0, price=0, no settlement.
-	const orderExpiration = calcOrderExpiration();
 	const expiryEpochMillis = orderExpiration * 1000;
 
 	return {
@@ -404,7 +420,6 @@ export async function buildPositionTpSlPayload(params: {
 		nonce: String(nonce),
 		reduceOnly: true,
 		postOnly: false,
-		selfTradeProtectionLevel: 'ACCOUNT',
 		tpSlType: 'POSITION',
 		takeProfit,
 		stopLoss,

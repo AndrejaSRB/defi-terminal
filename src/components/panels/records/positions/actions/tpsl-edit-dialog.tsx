@@ -2,7 +2,11 @@ import { memo, useState, useCallback, useEffect } from 'react';
 import { useAtomValue, useSetAtom, useStore } from 'jotai';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { activeDexExchangeAtom, activeNormalizerAtom } from '@/atoms/dex';
+import {
+	activeDexExchangeAtom,
+	activeDexIdAtom,
+	activeNormalizerAtom,
+} from '@/atoms/dex';
 import { pricesAtom } from '@/atoms/prices';
 import { walletAddressAtom } from '@/atoms/user/onboarding';
 
@@ -31,6 +35,7 @@ export const TpslEditDialog = memo(function TpslEditDialog() {
 	const setIsClosing = useSetAtom(isClosingPositionAtom);
 	const isClosing = useAtomValue(isClosingPositionAtom);
 	const normalizer = useAtomValue(activeNormalizerAtom);
+	const dexId = useAtomValue(activeDexIdAtom);
 
 	const open = action?.type === 'tpsl';
 	const coin = action?.coin ?? '';
@@ -42,6 +47,11 @@ export const TpslEditDialog = memo(function TpslEditDialog() {
 	const markPrice = coin ? safeParseFloat(prices[coin]) : 0;
 	const existingTpId = action?.tpOrderId ?? null;
 	const existingSLId = action?.slOrderId ?? null;
+	const tpslExternalId = action?.tpslExternalId ?? null;
+	// Extended: single TPSL order, canceling one cancels both
+	const isCombinedTpsl = !!tpslExternalId;
+	// Hide "Configure Amount" and "Limit Price" for DEXes that don't support them
+	const showAdvancedOptions = dexId !== 'extended';
 
 	const [tpPrice, setTpPrice] = useState('');
 	const [slPrice, setSlPrice] = useState('');
@@ -144,47 +154,62 @@ export const TpslEditDialog = memo(function TpslEditDialog() {
 	const expectedLoss =
 		slPriceNum > 0 ? (slPriceNum - entryPrice) * size * direction : 0;
 
+	const cancelTpslOrder = useCallback(
+		async (orderId: number, label: string) => {
+			if (isClosing) return;
+			const exchange = store.get(activeDexExchangeAtom);
+			if (!exchange) {
+				toast.error('Trading not available for this DEX');
+				return;
+			}
+			setIsClosing(true);
+			const address = store.get(walletAddressAtom) ?? '';
+			exchange.setWalletAddress(address);
+			try {
+				await exchange.cancelOrder({
+					coin,
+					orderId,
+					externalId: tpslExternalId ?? undefined,
+				});
+				// Combined TPSL: canceling one cancels both
+				if (isCombinedTpsl) {
+					setCanceledTp(true);
+					setCanceledSl(true);
+					toast.success('TP/SL canceled');
+				} else {
+					toast.success(`${label} canceled`);
+				}
+				queryClient.invalidateQueries({ queryKey: ['dex-user-data'] });
+			} catch (error) {
+				toast.error(
+					error instanceof Error ? error.message : `Cancel ${label} failed`,
+				);
+			} finally {
+				setIsClosing(false);
+			}
+		},
+		[
+			isClosing,
+			coin,
+			tpslExternalId,
+			isCombinedTpsl,
+			store,
+			setIsClosing,
+			queryClient,
+		],
+	);
+
 	const handleCancelTp = useCallback(async () => {
-		if (!existingTpId || isClosing) return;
-		const exchange = store.get(activeDexExchangeAtom);
-		if (!exchange) {
-			toast.error('Trading not available for this DEX');
-			return;
-		}
-		setIsClosing(true);
-		const address = store.get(walletAddressAtom) ?? '';
-		exchange.setWalletAddress(address);
-		try {
-			await exchange.cancelOrder({ coin, orderId: existingTpId });
-			setCanceledTp(true);
-			toast.success('Take Profit canceled');
-		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Cancel TP failed');
-		} finally {
-			setIsClosing(false);
-		}
-	}, [existingTpId, isClosing, coin, store, setIsClosing]);
+		if (!existingTpId) return;
+		setCanceledTp(true);
+		await cancelTpslOrder(existingTpId, 'Take Profit');
+	}, [existingTpId, cancelTpslOrder]);
 
 	const handleCancelSl = useCallback(async () => {
-		if (!existingSLId || isClosing) return;
-		const exchange = store.get(activeDexExchangeAtom);
-		if (!exchange) {
-			toast.error('Trading not available for this DEX');
-			return;
-		}
-		setIsClosing(true);
-		const address = store.get(walletAddressAtom) ?? '';
-		exchange.setWalletAddress(address);
-		try {
-			await exchange.cancelOrder({ coin, orderId: existingSLId });
-			setCanceledSl(true);
-			toast.success('Stop Loss canceled');
-		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Cancel SL failed');
-		} finally {
-			setIsClosing(false);
-		}
-	}, [existingSLId, isClosing, coin, store, setIsClosing]);
+		if (!existingSLId) return;
+		setCanceledSl(true);
+		await cancelTpslOrder(existingSLId, 'Stop Loss');
+	}, [existingSLId, cancelTpslOrder]);
 
 	const handleConfirm = useCallback(async () => {
 		if (isClosing) return;
@@ -204,12 +229,29 @@ export const TpslEditDialog = memo(function TpslEditDialog() {
 		exchange.setWalletAddress(address);
 
 		try {
+			// Merge new values with existing: if user only sets SL, preserve existing TP (and vice versa).
+			// On Extended, TPSL is a single order — sending only SL would replace the whole order.
+			const existingTp = !canceledTp
+				? (action?.tpPrice ?? undefined)
+				: undefined;
+			const existingSl = !canceledSl
+				? (action?.slPrice ?? undefined)
+				: undefined;
+			const finalTp = tpPriceNum > 0 ? tpPriceNum : existingTp;
+			const finalSl = slPriceNum > 0 ? slPriceNum : existingSl;
+
+			if (!finalTp && !finalSl) {
+				toast.error('Set at least one: Take Profit or Stop Loss');
+				setIsClosing(false);
+				return;
+			}
+
 			await exchange.setPositionTpSl({
 				coin,
 				side,
 				size,
-				tp: tpPriceNum > 0 ? tpPriceNum : undefined,
-				sl: slPriceNum > 0 ? slPriceNum : undefined,
+				tp: finalTp,
+				sl: finalSl,
 			});
 
 			toast.success('TP/SL set for position');
@@ -365,51 +407,55 @@ export const TpslEditDialog = memo(function TpslEditDialog() {
 						</div>
 					)}
 
-					{/* Configure Amount */}
-					<label className="flex cursor-pointer items-center gap-2 text-xs">
-						<Checkbox
-							checked={configureAmount}
-							onCheckedChange={(checked) =>
-								setConfigureAmount(checked === true)
-							}
-						/>
-						<span className="text-foreground font-medium">
-							Configure Amount
-						</span>
-					</label>
-					{configureAmount && (
-						<Slider
-							min={0}
-							max={100}
-							step={1}
-							value={[sizePercent]}
-							onValueChange={(values) => setSizePercent(values[0])}
-						/>
-					)}
+					{showAdvancedOptions && (
+						<>
+							{/* Configure Amount */}
+							<label className="flex cursor-pointer items-center gap-2 text-xs">
+								<Checkbox
+									checked={configureAmount}
+									onCheckedChange={(checked) =>
+										setConfigureAmount(checked === true)
+									}
+								/>
+								<span className="text-foreground font-medium">
+									Configure Amount
+								</span>
+							</label>
+							{configureAmount && (
+								<Slider
+									min={0}
+									max={100}
+									step={1}
+									value={[sizePercent]}
+									onValueChange={(values) => setSizePercent(values[0])}
+								/>
+							)}
 
-					{/* Limit Price */}
-					<label className="flex cursor-pointer items-center gap-2 text-xs">
-						<Checkbox
-							checked={limitPriceEnabled}
-							onCheckedChange={(checked) =>
-								setLimitPriceEnabled(checked === true)
-							}
-						/>
-						<span className="text-foreground font-medium">Limit Price</span>
-					</label>
-					{limitPriceEnabled && (
-						<div className="grid grid-cols-2 gap-1.5">
-							<NumberInput
-								value={tpLimitPrice}
-								onValueChange={setTpLimitPrice}
-								placeholder="TP Limit Price"
-							/>
-							<NumberInput
-								value={slLimitPrice}
-								onValueChange={setSlLimitPrice}
-								placeholder="SL Limit Price"
-							/>
-						</div>
+							{/* Limit Price */}
+							<label className="flex cursor-pointer items-center gap-2 text-xs">
+								<Checkbox
+									checked={limitPriceEnabled}
+									onCheckedChange={(checked) =>
+										setLimitPriceEnabled(checked === true)
+									}
+								/>
+								<span className="text-foreground font-medium">Limit Price</span>
+							</label>
+							{limitPriceEnabled && (
+								<div className="grid grid-cols-2 gap-1.5">
+									<NumberInput
+										value={tpLimitPrice}
+										onValueChange={setTpLimitPrice}
+										placeholder="TP Limit Price"
+									/>
+									<NumberInput
+										value={slLimitPrice}
+										onValueChange={setSlLimitPrice}
+										placeholder="SL Limit Price"
+									/>
+								</div>
+							)}
+						</>
 					)}
 				</div>
 
