@@ -5,6 +5,10 @@
 			"source": "/api/extended/:path*",
 			"destination": "/api/extended/[...path]"
 		},
+		{
+			"source": "/api/signer/:path*",
+			"destination": "/api/signer/[...path]"
+		},
 		{ "source": "/(.*)", "destination": "/index.html" }
 	]
 }

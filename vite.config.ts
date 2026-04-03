@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 // @ts-expect-error — ws is a CJS module, vite.config runs in Node
@@ -13,7 +13,7 @@ const EXT_UA = "Mozilla/5.0 Tegra/1.0";
  * Dev-only proxy for Extended API (REST + WebSocket).
  * Cloudflare rejects browser headers, so we make clean
  */
-function extendedProxy(): Plugin {
+function extendedProxy(signerUrl: string, signingSecret: string): Plugin {
   return {
     name: "extended-proxy",
     configureServer(server) {
@@ -70,6 +70,43 @@ function extendedProxy(): Plugin {
         }
       });
 
+      // ── Signer proxy ──
+      server.middlewares.use("/api/signer", async (req, res) => {
+        const path = req.url ?? "/";
+        const target = `${signerUrl}${path}`;
+
+        try {
+          let reqBody: string | undefined;
+          if (req.method && ["POST"].includes(req.method)) {
+            const chunks: Buffer[] = [];
+            for await (const chunk of req) chunks.push(chunk as Buffer);
+            reqBody = Buffer.concat(chunks).toString();
+          }
+
+          const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+          };
+          if (signingSecret) {
+            headers["X-Signing-Secret"] = signingSecret;
+          }
+
+          const response = await fetch(target, {
+            method: req.method ?? "GET",
+            headers,
+            ...(reqBody ? { body: reqBody } : {}),
+          });
+
+          const body = Buffer.from(await response.arrayBuffer());
+          res.statusCode = response.status;
+          res.setHeader("Content-Type", "application/json");
+          res.setHeader("Content-Length", body.length);
+          res.end(body);
+        } catch {
+          res.statusCode = 502;
+          res.end(JSON.stringify({ error: "Signer proxy failed" }));
+        }
+      });
+
       // ── WebSocket relay ──
       const wss = new WebSocketServer({ noServer: true });
 
@@ -114,11 +151,20 @@ function extendedProxy(): Plugin {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), tailwindcss(), extendedProxy()],
-  resolve: {
-    alias: {
-      "@": "/src",
+export default defineConfig(({ mode }) => {
+  // Load ALL env vars (prefix "" = include non-VITE_ vars)
+  const env = loadEnv(mode, process.cwd(), "");
+
+  const signerUrl =
+    env.SIGNER_URL || "https://extended-signer-1.onrender.com";
+  const signingSecret = env.SIGNING_SECRET || "";
+
+  return {
+    plugins: [react(), tailwindcss(), extendedProxy(signerUrl, signingSecret)],
+    resolve: {
+      alias: {
+        "@": "/src",
+      },
     },
-  },
+  };
 });
