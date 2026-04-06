@@ -1,22 +1,30 @@
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { summarizeRoute, formatDuration } from '@/services/lifi/route-summary';
 import type { Route } from '@lifi/sdk';
 
 interface RouteCardProps {
 	route: Route;
+	routeIndex: number;
 	destinationDecimals: number;
 	isSelected: boolean;
-	onSelect: () => void;
+	onSelect: (index: number) => void;
 }
 
 const RouteCard = ({
 	route,
+	routeIndex,
 	destinationDecimals,
 	isSelected,
 	onSelect,
 }: RouteCardProps) => {
+	const handleSelect = useCallback(
+		() => onSelect(routeIndex),
+		[onSelect, routeIndex],
+	);
+
 	const summary = summarizeRoute(route);
+
 	if (!summary) return null;
 
 	const receiveAmount = (
@@ -30,7 +38,7 @@ const RouteCard = ({
 	return (
 		<button
 			type="button"
-			onClick={onSelect}
+			onClick={handleSelect}
 			className={cn(
 				'flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors',
 				isSelected

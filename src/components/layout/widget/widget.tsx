@@ -169,9 +169,10 @@ const Widget = ({ config }: WidgetProps) => {
 							<RouteCard
 								key={route.id}
 								route={route}
+								routeIndex={routeIndex}
 								destinationDecimals={config.destinationTokenDecimals}
 								isSelected={routeIndex === form.selectedRouteIndex}
-								onSelect={() => form.setSelectedRouteIndex(routeIndex)}
+								onSelect={form.setSelectedRouteIndex}
 							/>
 						))}
 					</div>
