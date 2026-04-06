@@ -193,6 +193,7 @@ export const hyperliquidNormalizer: DexNormalizer = {
 	depositConfig: {
 		methods: ['native', 'cross-chain', 'card'],
 		chainId: 42161,
+		lifiDestinationChainId: 1337,
 		tokenAddress: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
 		tokenSymbol: 'USDC',
 		tokenDecimals: 6,

@@ -35,6 +35,8 @@ export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
 	const widgetConfig: WidgetConfig = useMemo(
 		() => ({
 			destinationChainId: depositConfig.chainId,
+			lifiDestinationChainId:
+				depositConfig.lifiDestinationChainId ?? depositConfig.chainId,
 			destinationTokenAddress: depositConfig.tokenAddress,
 			destinationTokenSymbol: depositConfig.tokenSymbol,
 			destinationTokenDecimals: depositConfig.tokenDecimals,
@@ -42,8 +44,9 @@ export function DepositDialog({ open, onOpenChange }: DepositDialogProps) {
 			minDeposit: depositConfig.minDeposit,
 			directDepositFee: depositConfig.fee,
 			directDepositTime: depositConfig.estimatedTime,
+			destinationName: normalizer.name,
 		}),
-		[depositConfig],
+		[depositConfig, normalizer.name],
 	);
 
 	const goBack = useCallback(() => setView('select'), []);

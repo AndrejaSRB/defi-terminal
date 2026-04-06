@@ -27,11 +27,15 @@ export function useWidgetForm(config: WidgetConfig) {
 	const [amount, setAmount] = useState('');
 	const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
 
+	// Fall back to first available chain when user hasn't picked one yet
+	const effectiveChainId =
+		selectedChainId ?? allChainOptions[0]?.chainId ?? null;
+
 	// - Derived: chain + token selection -
 
 	const availableTokens = useMemo(
-		() => (selectedChainId ? tokensForChain(selectedChainId) : []),
-		[tokensForChain, selectedChainId],
+		() => (effectiveChainId ? tokensForChain(effectiveChainId) : []),
+		[tokensForChain, effectiveChainId],
 	);
 
 	const effectiveTokenKey = useMemo(() => {
@@ -61,13 +65,13 @@ export function useWidgetForm(config: WidgetConfig) {
 	// - Derived: direct deposit detection -
 
 	const isDirectDeposit = useMemo(() => {
-		if (!selectedChainId || !selectedToken) return false;
-		const isDestChain = selectedChainId === config.destinationChainId;
+		if (!effectiveChainId || !selectedToken) return false;
+		const isDestChain = effectiveChainId === config.destinationChainId;
 		const isDestToken =
 			selectedToken.address.toLowerCase() ===
 			config.destinationTokenAddress.toLowerCase();
 		return isDestChain && isDestToken;
-	}, [selectedChainId, selectedToken, config]);
+	}, [effectiveChainId, selectedToken, config]);
 
 	// - Derived: validation -
 
@@ -84,7 +88,7 @@ export function useWidgetForm(config: WidgetConfig) {
 	// - Derived: chain switching -
 
 	const needsChainSwitch =
-		selectedChainId !== null && !isOnChain(selectedChainId);
+		effectiveChainId !== null && !isOnChain(effectiveChainId);
 
 	// - Routes -
 
@@ -107,8 +111,8 @@ export function useWidgetForm(config: WidgetConfig) {
 		isCountdownRunning,
 		refresh: refreshRoutes,
 	} = useWidgetRoutes({
-		fromChainId: selectedChainId ?? undefined,
-		toChainId: config.destinationChainId,
+		fromChainId: effectiveChainId ?? undefined,
+		toChainId: config.lifiDestinationChainId,
 		fromTokenAddress: fromTokenAddress,
 		toTokenAddress: config.destinationTokenAddress,
 		fromAmount: fromAmountWei,
@@ -165,18 +169,9 @@ export function useWidgetForm(config: WidgetConfig) {
 	}, [selectedToken]);
 
 	const handleSwitchChain = useCallback(async () => {
-		if (selectedChainId === null) return;
-		await switchChain(selectedChainId);
-	}, [selectedChainId, switchChain]);
-
-	// - Auto-select first chain -
-
-	const chainOptions = allChainOptions;
-
-	if (chainOptions.length > 0 && selectedChainId === null) {
-		const firstChainId = chainOptions[0].chainId;
-		queueMicrotask(() => setSelectedChainId(firstChainId));
-	}
+		if (effectiveChainId === null) return;
+		await switchChain(effectiveChainId);
+	}, [effectiveChainId, switchChain]);
 
 	return {
 		// Config
@@ -184,9 +179,9 @@ export function useWidgetForm(config: WidgetConfig) {
 		walletAddress,
 
 		// Token state
-		chainOptions,
+		chainOptions: allChainOptions,
 		availableTokens,
-		selectedChainId,
+		selectedChainId: effectiveChainId,
 		effectiveTokenKey,
 		selectedToken,
 		isLoadingTokens,

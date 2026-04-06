@@ -57,8 +57,10 @@ export type DepositMethod = 'native' | 'cross-chain' | 'bridge-usdc' | 'card';
 export interface DepositConfig {
 	/** Which deposit methods are available for this DEX */
 	methods: DepositMethod[];
-	/** Chain ID where the DEX accepts native deposits (HL) */
+	/** Chain ID where the DEX accepts native deposits (HL on Arbitrum) */
 	chainId: number;
+	/** LI.FI destination chain ID for cross-chain routes (e.g. 1337 for HL L1) */
+	lifiDestinationChainId?: number;
 	/** Token address the DEX accepts (USDC, etc.) */
 	tokenAddress: string;
 	/** Token symbol for display */

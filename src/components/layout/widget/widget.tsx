@@ -22,7 +22,6 @@ const Widget = ({ config }: WidgetProps) => {
 		bridgeExecution,
 		selectedBridgeName,
 		selectedChainName,
-		destinationChainName,
 		handleRefresh,
 		handleExecute,
 		resetDeposit,
@@ -53,7 +52,6 @@ const Widget = ({ config }: WidgetProps) => {
 	// ── Bridge execution / success ──
 	if (
 		bridgeExecution.status === 'executing' ||
-		bridgeExecution.status === 'depositing' ||
 		bridgeExecution.status === 'success'
 	) {
 		return (
@@ -62,12 +60,9 @@ const Widget = ({ config }: WidgetProps) => {
 					<p className="text-sm font-medium text-foreground">
 						{bridgeExecution.status === 'success'
 							? 'Deposit Complete'
-							: bridgeExecution.status === 'depositing'
-								? 'Depositing to HyperLiquid'
-								: 'Bridging in Progress'}
+							: 'Bridging in Progress'}
 					</p>
-					{(bridgeExecution.status === 'executing' ||
-						bridgeExecution.status === 'depositing') && (
+					{bridgeExecution.status === 'executing' && (
 						<p className="text-xs text-muted-foreground">
 							Please do not close this window
 						</p>
@@ -79,7 +74,7 @@ const Widget = ({ config }: WidgetProps) => {
 				{bridgeExecution.status === 'success' && (
 					<div className="flex flex-col items-center gap-3 pt-2">
 						<p className="text-center text-xs text-muted-foreground">
-							Funds have arrived on {destinationChainName}.
+							Funds have arrived on {config.destinationName}.
 						</p>
 						<Button variant="secondary" onClick={resetBridge}>
 							Make Another Transfer
@@ -110,7 +105,7 @@ const Widget = ({ config }: WidgetProps) => {
 			<p className="text-xs text-muted-foreground">
 				{form.isDirectDeposit
 					? `Deposit ${config.destinationTokenSymbol} directly to your trading account.`
-					: `Bridge tokens to ${destinationChainName}. Once arrived, funds will be deposited to your trading account.`}
+					: `Bridge tokens directly to ${config.destinationName}.`}
 			</p>
 
 			<SourcePanel
@@ -195,7 +190,7 @@ const Widget = ({ config }: WidgetProps) => {
 				needsChainSwitch={form.needsChainSwitch}
 				chainName={selectedChainName}
 				bridgeName={selectedBridgeName}
-				destinationChainName={destinationChainName}
+				destinationName={config.destinationName}
 				onSwitchChain={form.handleSwitchChain}
 				onExecute={handleExecute}
 			/>

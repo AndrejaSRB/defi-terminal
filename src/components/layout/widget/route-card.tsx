@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { cn } from '@/lib/utils';
+import { summarizeRoute, formatDuration } from '@/services/lifi/route-summary';
 import type { Route } from '@lifi/sdk';
 
 interface RouteCardProps {
@@ -7,55 +8,6 @@ interface RouteCardProps {
 	destinationDecimals: number;
 	isSelected: boolean;
 	onSelect: () => void;
-}
-
-function summarizeRoute(route: Route) {
-	const firstStep = route.steps[0];
-	const lastStep = route.steps[route.steps.length - 1];
-	if (!firstStep || !lastStep) return null;
-
-	const bridgeName = firstStep.toolDetails.name;
-	const bridgeLogo = firstStep.toolDetails.logoURI;
-
-	// Aggregate execution duration across all steps
-	const totalDuration = route.steps.reduce(
-		(sum, step) => sum + step.estimate.executionDuration,
-		0,
-	);
-
-	// Aggregate fees across all steps
-	const totalFeeUsd = route.steps.reduce((sum, step) => {
-		const stepFees = (step.estimate.feeCosts ?? []).reduce(
-			(feeSum, fee) => feeSum + Number(fee.amountUSD ?? 0),
-			0,
-		);
-		return sum + stepFees;
-	}, 0);
-
-	// Aggregate gas across all steps
-	const totalGasUsd = route.steps.reduce((sum, step) => {
-		const stepGas = (step.estimate.gasCosts ?? []).reduce(
-			(gasSum, gas) => gasSum + Number(gas.amountUSD ?? 0),
-			0,
-		);
-		return sum + stepGas;
-	}, 0);
-
-	return {
-		bridgeName,
-		bridgeLogo,
-		totalDuration,
-		totalFeeUsd,
-		totalGasUsd,
-		totalCostUsd: totalFeeUsd + totalGasUsd,
-		toAmount: lastStep.estimate.toAmount,
-	};
-}
-
-function formatDuration(seconds: number): string {
-	if (seconds < 60) return `${seconds}s`;
-	const minutes = Math.ceil(seconds / 60);
-	return `~${minutes} min`;
 }
 
 const RouteCard = ({
@@ -86,7 +38,6 @@ const RouteCard = ({
 					: 'border-border hover:border-primary/30 hover:bg-muted/30',
 			)}
 		>
-			{/* Bridge logo */}
 			{summary.bridgeLogo && (
 				<img
 					src={summary.bridgeLogo}
@@ -95,7 +46,6 @@ const RouteCard = ({
 				/>
 			)}
 
-			{/* Route details */}
 			<div className="flex-1 min-w-0">
 				<div className="flex items-center gap-2">
 					<span className="text-sm font-medium text-foreground">
@@ -119,7 +69,6 @@ const RouteCard = ({
 				</div>
 			</div>
 
-			{/* Receive amount */}
 			<span className="text-sm font-semibold tabular-nums text-foreground">
 				{receiveAmount}
 			</span>

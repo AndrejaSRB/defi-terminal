@@ -13,7 +13,7 @@ interface WidgetButtonProps {
 	needsChainSwitch: boolean;
 	chainName: string;
 	bridgeName: string | undefined;
-	destinationChainName: string;
+	destinationName: string;
 	onSwitchChain: () => void;
 	onExecute: () => void;
 }
@@ -30,7 +30,7 @@ const WidgetButton = ({
 	needsChainSwitch,
 	chainName,
 	bridgeName,
-	destinationChainName,
+	destinationName,
 	onSwitchChain,
 	onExecute,
 }: WidgetButtonProps) => {
@@ -66,7 +66,7 @@ const WidgetButton = ({
 			: bridgeDepositError
 				? bridgeDepositError
 				: isDirectDeposit
-					? `Deposit to ${destinationChainName}`
+					? `Deposit to ${destinationName}`
 					: isLoadingRoutes
 						? 'Finding Routes...'
 						: hasRoute

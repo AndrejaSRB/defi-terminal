@@ -19,7 +19,7 @@ interface UseWidgetParams {
 
 export function useWidget({ config }: UseWidgetParams) {
 	const form = useWidgetForm(config);
-	const bridgeExecution = useWidgetExecute(config);
+	const bridgeExecution = useWidgetExecute();
 	const { send: sendTransaction } = useWalletTransaction();
 	const { isOnChain, switchChain } = useWalletChain();
 
@@ -133,11 +133,6 @@ export function useWidget({ config }: UseWidgetParams) {
 		[form.selectedChainId],
 	);
 
-	const destinationChainName = useMemo(
-		() => getChainName(config.destinationChainId),
-		[config.destinationChainId],
-	);
-
 	const resetDeposit = useCallback(() => {
 		setDepositStatus('idle');
 		form.setAmount('');
@@ -157,7 +152,6 @@ export function useWidget({ config }: UseWidgetParams) {
 		bridgeExecution,
 		selectedBridgeName,
 		selectedChainName,
-		destinationChainName,
 		handleRefresh,
 		handleExecute,
 		resetDeposit,
