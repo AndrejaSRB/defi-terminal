@@ -50,7 +50,11 @@ export class MultiStreamWebSocket {
 		}
 	}
 
-	subscribe(descriptor: ChannelDescriptor, callback: DataCallback): () => void {
+	subscribe(
+		descriptor: ChannelDescriptor,
+		callback: DataCallback,
+		_options?: import('./shared').SubscribeOptions,
+	): () => void {
 		if (!this.protocol) return () => {};
 
 		const key = this.protocol.channelKey(descriptor);

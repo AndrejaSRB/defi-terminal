@@ -3,6 +3,7 @@ import type {
 	ConnectionState,
 	DataCallback,
 	StateListener,
+	SubscribeOptions,
 	TradingWsClient,
 } from './websocket/shared';
 import { createWebSocket, buildProtocolHooks } from './websocket/factory';
@@ -28,8 +29,12 @@ let activeWs: TradingWebSocket | ReturnType<typeof createWebSocket> =
 // Hooks import this object. It delegates to whatever activeWs is.
 
 export const tradingWs: TradingWsClient = {
-	subscribe(descriptor: ChannelDescriptor, callback: DataCallback): () => void {
-		return activeWs.subscribe(descriptor, callback);
+	subscribe(
+		descriptor: ChannelDescriptor,
+		callback: DataCallback,
+		options?: SubscribeOptions,
+	): () => void {
+		return activeWs.subscribe(descriptor, callback, options);
 	},
 
 	connect(): void {

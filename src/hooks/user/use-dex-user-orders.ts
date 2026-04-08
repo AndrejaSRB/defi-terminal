@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { tradingWs } from '@/services/ws';
 import { activeNormalizerAtom } from '@/atoms/dex';
@@ -10,6 +10,20 @@ export function useDexUserOrders() {
 	const { walletAddress } = useAuth();
 	const setOrders = useSetAtom(userOpenOrdersAtom);
 
+	const handleData = useCallback(
+		(raw: unknown) => {
+			setOrders(normalizer.parseUserOpenOrders(raw));
+		},
+		[normalizer, setOrders],
+	);
+
+	const handleReconnect = useCallback(() => {
+		normalizer
+			.fetchUserOpenOrders?.(walletAddress!)
+			.then(setOrders)
+			.catch(() => {});
+	}, [normalizer, walletAddress, setOrders]);
+
 	useEffect(() => {
 		if (!walletAddress || !normalizer.channels.userOpenOrders) {
 			setOrders([]);
@@ -17,10 +31,10 @@ export function useDexUserOrders() {
 		}
 
 		const channel = normalizer.channels.userOpenOrders(walletAddress);
-		const unsub = tradingWs.subscribe(channel, (raw) => {
-			setOrders(normalizer.parseUserOpenOrders(raw));
+		const unsub = tradingWs.subscribe(channel, handleData, {
+			onReconnect: handleReconnect,
 		});
 
 		return unsub;
-	}, [normalizer, walletAddress, setOrders]);
+	}, [normalizer, walletAddress, setOrders, handleData, handleReconnect]);
 }

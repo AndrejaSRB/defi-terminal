@@ -206,6 +206,8 @@ export interface DexNormalizer {
 		endTime?: number,
 	) => Promise<Candle[]>;
 	fetchAllAssetCtxs: () => Promise<Map<string, ActiveAssetData>>;
+	fetchUserPositions?: (address: string) => Promise<Position[]>;
+	fetchUserOpenOrders?: (address: string) => Promise<OpenOrder[]>;
 	fetchUserFills?: (address: string, limit?: number) => Promise<UserFill[]>;
 	fetchOrderHistory?: (
 		address: string,

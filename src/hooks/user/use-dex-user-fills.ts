@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { toast } from 'sonner';
 import { tradingWs } from '@/services/ws';
@@ -38,6 +38,33 @@ export function useDexUserFills() {
 	const { walletAddress } = useAuth();
 	const setFills = useSetAtom(userFillsAtom);
 	const activeTab = useAtomValue(activeRecordsTabAtom);
+	const hasSnapshotRef = useRef(false);
+
+	const handleData = useCallback(
+		(raw: unknown) => {
+			if (!normalizer.parseUserFills) return;
+			const wsData = raw as { isSnapshot?: boolean; fills?: unknown[] };
+			const fills = normalizer.parseUserFills(wsData.fills ?? raw);
+
+			if (wsData.isSnapshot || !hasSnapshotRef.current) {
+				hasSnapshotRef.current = true;
+				setFills(fills.reverse().slice(0, MAX_FILLS));
+			} else {
+				for (const fill of fills) {
+					notifyFill(fill, normalizer);
+				}
+				setFills((prev) => [...fills, ...prev].slice(0, MAX_FILLS));
+			}
+		},
+		[normalizer, setFills],
+	);
+
+	const handleReconnect = useCallback(() => {
+		normalizer
+			.fetchUserFills?.(walletAddress!, MAX_FILLS)
+			.then((fills) => setFills(fills))
+			.catch(() => {});
+	}, [normalizer, walletAddress, setFills]);
 
 	useEffect(() => {
 		if (!walletAddress) {
@@ -45,36 +72,30 @@ export function useDexUserFills() {
 			return;
 		}
 
-		// WS path — HL
+		// WS path
 		if (normalizer.channels.userFills && normalizer.parseUserFills) {
+			hasSnapshotRef.current = false;
 			const channel = normalizer.channels.userFills(walletAddress);
-			const parse = normalizer.parseUserFills;
-			let hasSnapshot = false;
-
-			const unsub = tradingWs.subscribe(channel, (raw) => {
-				const wsData = raw as { isSnapshot?: boolean; fills?: unknown[] };
-				const fills = parse(wsData.fills ?? raw);
-
-				if (wsData.isSnapshot || !hasSnapshot) {
-					hasSnapshot = true;
-					setFills(fills.reverse().slice(0, MAX_FILLS));
-				} else {
-					for (const fill of fills) {
-						notifyFill(fill, normalizer);
-					}
-					setFills((prev) => [...fills, ...prev].slice(0, MAX_FILLS));
-				}
+			const unsub = tradingWs.subscribe(channel, handleData, {
+				onReconnect: handleReconnect,
 			});
 
 			return unsub;
 		}
 
-		// REST fallback — Extended (refetch on tab activation)
+		// REST fallback (Extended)
 		if (normalizer.fetchUserFills) {
 			normalizer
 				.fetchUserFills(walletAddress, MAX_FILLS)
 				.then((fills) => setFills(fills))
 				.catch(() => setFills([]));
 		}
-	}, [normalizer, walletAddress, setFills, activeTab]);
+	}, [
+		normalizer,
+		walletAddress,
+		setFills,
+		activeTab,
+		handleData,
+		handleReconnect,
+	]);
 }

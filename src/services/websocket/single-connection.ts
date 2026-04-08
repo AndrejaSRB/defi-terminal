@@ -3,6 +3,7 @@ import type {
 	ConnectionState,
 	DataCallback,
 	StateListener,
+	SubscribeOptions,
 	WebSocketConfig,
 } from './shared';
 
@@ -53,6 +54,10 @@ class TradingWebSocket {
 	private subscribers = new Map<string, Set<DataCallback>>();
 	private lastMessages = new Map<string, unknown>();
 	private channelDescriptors = new Map<string, ChannelDescriptor>();
+
+	// Per-channel reconnect callbacks for REST reconciliation
+	private reconnectCallbacks = new Map<string, Set<() => void>>();
+	private isReconnect = false;
 
 	// Message buffering for snapshot+delta sync
 	private buffers = new Map<string, unknown[]>();
@@ -127,6 +132,7 @@ class TradingWebSocket {
 		this.clearAllTimers();
 		this.rejectAllPending();
 		this.connectLock = false;
+		this.isReconnect = false;
 
 		if (this.ws) {
 			this.ws.onopen = null;
@@ -155,9 +161,11 @@ class TradingWebSocket {
 		this.subscribers.clear();
 		this.lastMessages.clear();
 		this.channelDescriptors.clear();
+		this.reconnectCallbacks.clear();
 		this.buffers.clear();
 		this.sendQueue = [];
 		this.reconnectAttempt = 0;
+		this.isReconnect = false;
 	}
 
 	/**
@@ -207,7 +215,11 @@ class TradingWebSocket {
 		});
 	}
 
-	subscribe(descriptor: ChannelDescriptor, callback: DataCallback): () => void {
+	subscribe(
+		descriptor: ChannelDescriptor,
+		callback: DataCallback,
+		options?: SubscribeOptions,
+	): () => void {
 		const key = this.protocol.channelKey(descriptor);
 
 		// Cancel any pending cache eviction for this channel
@@ -226,13 +238,22 @@ class TradingWebSocket {
 
 		this.subscribers.get(key)!.add(callback);
 
+		// Store reconnect callback for REST reconciliation
+		if (options?.onReconnect) {
+			if (!this.reconnectCallbacks.has(key)) {
+				this.reconnectCallbacks.set(key, new Set());
+			}
+			this.reconnectCallbacks.get(key)!.add(options.onReconnect);
+		}
+
 		// Replay cached value so component doesn't flash loading
 		const cached = this.lastMessages.get(key);
 		if (cached !== undefined) {
 			queueMicrotask(() => callback(cached));
 		}
 
-		return () => this.unsubscribe(key, callback);
+		const onReconnectRef = options?.onReconnect;
+		return () => this.unsubscribe(key, callback, onReconnectRef);
 	}
 
 	// ── Buffering API (snapshot+delta sync) ──────────────────────────
@@ -326,6 +347,7 @@ class TradingWebSocket {
 		}
 		this.subscribers.clear();
 		this.channelDescriptors.clear();
+		this.reconnectCallbacks.clear();
 		this.lastMessages.clear();
 		this.buffers.clear();
 		this.stateListeners.clear();
@@ -340,14 +362,30 @@ class TradingWebSocket {
 
 	// ── PRIVATE: Subscription Management ─────────────────────────────
 
-	private unsubscribe(key: string, callback: DataCallback) {
+	private unsubscribe(
+		key: string,
+		callback: DataCallback,
+		onReconnect?: () => void,
+	) {
 		const callbacks = this.subscribers.get(key);
 		if (!callbacks) return;
 
 		callbacks.delete(callback);
 
+		// Clean up this specific reconnect callback
+		if (onReconnect) {
+			const reconnectSet = this.reconnectCallbacks.get(key);
+			if (reconnectSet) {
+				reconnectSet.delete(onReconnect);
+				if (reconnectSet.size === 0) {
+					this.reconnectCallbacks.delete(key);
+				}
+			}
+		}
+
 		if (callbacks.size === 0) {
 			this.subscribers.delete(key);
+			this.reconnectCallbacks.delete(key);
 			this.buffers.delete(key);
 
 			const descriptor = this.channelDescriptors.get(key);
@@ -402,6 +440,9 @@ class TradingWebSocket {
 		this.ws = ws;
 
 		ws.onopen = () => {
+			const wasReconnect = this.isReconnect;
+			this.isReconnect = false;
+
 			this.connectLock = false;
 			this.reconnectAttempt = 0;
 			this.metrics.connectedAt = Date.now();
@@ -410,6 +451,19 @@ class TradingWebSocket {
 			// Resubscribe all active channels
 			for (const descriptor of this.channelDescriptors.values()) {
 				this.sendDirect(this.protocol.formatSubscribe(descriptor));
+			}
+
+			// Fire per-channel reconnect callbacks for REST reconciliation
+			if (wasReconnect) {
+				for (const callbackSet of this.reconnectCallbacks.values()) {
+					for (const cb of callbackSet) {
+						try {
+							cb();
+						} catch (e) {
+							console.error('[TradingWS] Reconnect callback error:', e);
+						}
+					}
+				}
 			}
 
 			this.flushSendQueue();
@@ -529,6 +583,7 @@ class TradingWebSocket {
 
 		switch (event.code) {
 			case 1000:
+				this.isReconnect = false;
 				this.setState('disconnected');
 				break;
 
@@ -573,6 +628,7 @@ class TradingWebSocket {
 			return;
 		}
 
+		this.isReconnect = true;
 		this.setState('reconnecting');
 		this.metrics.reconnectCount++;
 
@@ -639,6 +695,7 @@ class TradingWebSocket {
 			this.reconnectTimer = null;
 		}
 		if (this.ws?.readyState !== WebSocket.OPEN) {
+			this.isReconnect = true;
 			this.connect();
 		}
 	};
@@ -682,11 +739,13 @@ class TradingWebSocket {
 				// Was hidden long enough that connection is likely stale
 				this.disconnect();
 				this.reconnectAttempt = 0;
+				this.isReconnect = true;
 				this.connect();
 			} else {
 				// Short hide, socket not open — it's probably already reconnecting
 				if (this.state === 'disconnected') {
 					this.reconnectAttempt = 0;
+					this.isReconnect = true;
 					this.connect();
 				}
 			}

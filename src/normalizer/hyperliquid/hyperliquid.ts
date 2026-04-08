@@ -553,6 +553,31 @@ export const hyperliquidNormalizer: DexNormalizer = {
 		return result;
 	},
 
+	fetchUserPositions: async (address: string) => {
+		const res = await fetch(HL_INFO_URL, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				type: 'clearinghouseState',
+				user: address,
+			}),
+		});
+		return parseUserPositions(await res.json());
+	},
+
+	fetchUserOpenOrders: async (address: string) => {
+		const res = await fetch(HL_INFO_URL, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				type: 'openOrders',
+				user: address,
+				dex: 'ALL_DEXS',
+			}),
+		});
+		return parseUserOpenOrders(await res.json());
+	},
+
 	fetchUserFills: async (address: string, limit = 200) => {
 		const res = await fetch(HL_INFO_URL, {
 			method: 'POST',
