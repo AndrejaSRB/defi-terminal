@@ -134,7 +134,23 @@ export const hyperliquidExchange: DexExchange = {
 			agent.privateKey as `0x${string}`,
 			nonce,
 		);
-		await postExchange(signed);
+		const result = await postExchange(signed);
+		const statuses = (
+			result as {
+				response?: { data?: { statuses?: (string | { error: string })[] } };
+			}
+		).response?.data?.statuses;
+		if (statuses) {
+			const failures = statuses.filter(
+				(status): status is { error: string } => typeof status !== 'string',
+			);
+			if (failures.length > 0) {
+				const succeeded = statuses.length - failures.length;
+				throw new Error(
+					`${succeeded}/${statuses.length} orders canceled. Failed: ${failures[0].error}`,
+				);
+			}
+		}
 	},
 
 	async modifyOrder(params: ModifyOrderParams): Promise<OrderResult> {

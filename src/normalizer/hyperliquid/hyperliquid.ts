@@ -222,12 +222,34 @@ export const hyperliquidNormalizer: DexNormalizer = {
 		(message as { channel?: string }).channel === 'pong',
 
 	async init() {
-		const res = await fetch(HL_INFO_URL, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ type: 'allPerpMetas' }),
-		});
-		const groups = (await res.json()) as HlAllPerpMetasResponse;
+		const [metaRes, dexsRes] = await Promise.all([
+			fetch(HL_INFO_URL, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ type: 'allPerpMetas' }),
+			}),
+			fetch(HL_INFO_URL, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ type: 'perpDexs' }),
+			}),
+		]);
+		const groups = (await metaRes.json()) as HlAllPerpMetasResponse;
+		const perpDexs = (await dexsRes.json()) as (null | { name: string })[];
+
+		// Compute group offsets from perpDexs ordering
+		// Group 0 (main perps) = offset 0
+		// Deployed DEXes = 110000 + deployedIndex * 10000
+		const groupOffsets: number[] = [];
+		let deployedIndex = 0;
+		for (const dex of perpDexs) {
+			if (dex === null) {
+				groupOffsets.push(0);
+			} else {
+				groupOffsets.push(110000 + deployedIndex * 10000);
+				deployedIndex++;
+			}
+		}
 
 		const assetMetaMap = new Map<string, AssetMeta>();
 		szDecimalsMap.clear();
@@ -250,8 +272,8 @@ export const hyperliquidNormalizer: DexNormalizer = {
 			universeOrder.push(coins);
 		}
 
-		// Share universe order with order builder for asset index lookups
-		setUniverseOrder(universeOrder);
+		// Share universe order + offsets with order builder for asset index lookups
+		setUniverseOrder(universeOrder, groupOffsets);
 
 		// Fetch token annotations for dynamic categories (non-blocking)
 		await fetchAnnotations();

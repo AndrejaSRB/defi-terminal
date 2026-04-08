@@ -43,15 +43,17 @@ export function formatSizeForExchange(size: number, coin: string): number {
 // ── Asset Index ─────────────────────────────────────────────────────
 
 let universeOrderRef: string[][] = [];
+let groupOffsetsRef: number[] = [];
 
-export function setUniverseOrder(order: string[][]) {
+export function setUniverseOrder(order: string[][], groupOffsets: number[]) {
 	universeOrderRef = order;
+	groupOffsetsRef = groupOffsets;
 }
 
 export function getAssetIndex(coin: string): number {
 	for (let gi = 0; gi < universeOrderRef.length; gi++) {
 		const idx = universeOrderRef[gi].indexOf(coin);
-		if (idx !== -1) return gi === 0 ? idx : 10000 + idx;
+		if (idx !== -1) return groupOffsetsRef[gi] + idx;
 	}
 	throw new Error(`Unknown asset: ${coin}`);
 }
