@@ -21,11 +21,15 @@ export function useDexTrades() {
 		const channel = normalizer.channels.trades(token);
 		const unsub = tradingWs.subscribe(channel, (raw) => {
 			const newTrades = normalizer.parseTrades(raw);
-			setTrades((prev) => ({
-				status: 'live',
-				data: [...newTrades, ...prev.data].slice(0, MAX_TRADES),
-				error: null,
-			}));
+			setTrades((prev) => {
+				const existingIds = new Set(prev.data.map((trade) => trade.id));
+				const unique = newTrades.filter((trade) => !existingIds.has(trade.id));
+				return {
+					status: 'live',
+					data: [...unique, ...prev.data].slice(0, MAX_TRADES),
+					error: null,
+				};
+			});
 		});
 
 		return unsub;

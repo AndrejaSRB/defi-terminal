@@ -1,5 +1,7 @@
+import { useCallback } from 'react';
 import { useAtomValue } from 'jotai';
 import { activeNormalizerAtom } from '@/atoms/dex';
+import { liveMidPriceAtom } from './atoms/order-form-derived';
 import { useOrderFormData } from './hooks/use-order-form-data';
 import { useOrderFormActions } from './hooks/use-order-form-actions';
 import { MarginModeButton } from './fields/margin-mode-button';
@@ -22,6 +24,13 @@ export function OrderFormContent() {
 	const normalizer = useAtomValue(activeNormalizerAtom);
 	const data = useOrderFormData();
 	const actions = useOrderFormActions();
+	const midPrice = useAtomValue(liveMidPriceAtom);
+
+	const handleMidClick = useCallback(() => {
+		if (midPrice > 0) {
+			actions.setLimitPrice(midPrice.toFixed(data.priceDecimals));
+		}
+	}, [midPrice, data.priceDecimals, actions]);
 
 	if (!data.isReady) {
 		return <OrderFormSkeleton />;
@@ -55,6 +64,7 @@ export function OrderFormContent() {
 					onChange={actions.setLimitPrice}
 					label="Limit Price"
 					maxDecimals={data.priceDecimals}
+					onMidClick={handleMidClick}
 				/>
 			)}
 

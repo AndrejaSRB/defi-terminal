@@ -86,7 +86,7 @@ export function parseUserPositions(raw: unknown): Position[] {
 			const size = parseFloat(p.szi);
 			const absSize = Math.abs(size);
 			return {
-				coin: dex ? `${dex}:${p.coin}` : p.coin,
+				coin: dex && !p.coin.includes(':') ? `${dex}:${p.coin}` : p.coin,
 				size: absSize.toString(),
 				side: size >= 0 ? 'LONG' : 'SHORT',
 				entryPrice: p.entryPx,

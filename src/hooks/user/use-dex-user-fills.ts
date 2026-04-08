@@ -24,7 +24,7 @@ function notifyFill(
 	const priceFormatted = normalizer.formatPrice(fill.price, fill.coin);
 	const pnlText =
 		fill.closedPnl !== 0
-			? ` — PnL: ${fill.closedPnl >= 0 ? '+' : ''}$${Math.abs(fill.closedPnl).toFixed(2)}`
+			? ` - PnL: ${fill.closedPnl >= 0 ? '+' : ''}$${Math.abs(fill.closedPnl).toFixed(2)}`
 			: '';
 
 	toast.success(title, {
