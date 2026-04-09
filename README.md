@@ -1,4 +1,4 @@
-# DeFi Terminal
+# Tegra — Multi-DEX Trading Terminal
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black)
@@ -6,23 +6,47 @@
 ![Bun](https://img.shields.io/badge/Bun-000000?logo=bun&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?logo=tailwindcss&logoColor=white)
 
-Currently integrated with **HyperLiquid** and **Extended (StarkNet)**, with Lighter and Pacifica planned.
+A high-performance multi-DEX trading terminal built around hexagonal architecture and real-time execution systems.
 
-## Bridging & Swaps
+Currently integrated with **HyperLiquid** and **Extended (StarkNet)**.
 
-| DEX | Provider | Purpose |
-|---|---|---|
-| HyperLiquid | [LiFi](https://li.fi/) | Cross-chain bridging and token swaps |
-| Extended (StarkNet) | [Rhino.fi](https://rhino.fi/) | Bridge deposits to StarkNet |
+## Architecture
+
+Hexagonal (Ports & Adapters) with strict frontend layering:
+
+```
+WebSocket (service) → Normalizer (data layer) → Atoms (raw state) → Hooks (orchestrate) → UI (render)
+```
+
+```
+src/
+  services/        → Transport (WebSocket, REST, framework-agnostic)
+  normalizer/      → DEX adapters (parsing, formatting, protocol hooks)
+  atoms/           → Raw state (Jotai, derived selectors)
+  hooks/           → Orchestration (bind services to state)
+  providers/       → Global data lifecycle
+  components/      → Presentation only
+```
+
+## Bridging & Deposits
+
+| DEX         | Provider                      | Strategy                                                 |
+| ----------- | ----------------------------- | -------------------------------------------------------- |
+| HyperLiquid | [LI.FI](https://li.fi/)       | Direct routing to HL L1, native Arbitrum bridge for USDC |
+| Extended    | [Rhino.fi](https://rhino.fi/) | StarkNet bridge deposits                                 |
 
 ## Stack
 
-- **Runtime**: Bun
-- **Build**: Vite
-- **UI**: React + TypeScript + shadcn/ui + Tailwind CSS v4
-- **State**: Jotai
-- **Wallet**: Privy
-- **Architecture**: Hexagonal (Ports & Adapters)
+| Concern    | Choice                                    |
+| ---------- | ----------------------------------------- |
+| Runtime    | Bun                                       |
+| Build      | Vite                                      |
+| UI         | React + TypeScript + Tailwind + shadcn/ui |
+| State      | Jotai                                     |
+| Routing    | TanStack Router                           |
+| Wallet     | Privy                                     |
+| Formatting | Biome                                     |
+| Linting    | oxlint                                    |
 
 ## Getting Started
 
@@ -33,26 +57,21 @@ bun run dev
 
 ## Commands
 
-| Command | Description |
-|---|---|
-| `bun run dev` | Start dev server |
-| `bun run build` | Typecheck + production build |
-| `bun run preview` | Preview production build |
-| `bun run format` | Auto-format with Biome |
-| `bun run lint` | Lint with oxlint |
-| `bun run check` | Format + lint + typecheck |
+| Command          | Description                  |
+| ---------------- | ---------------------------- |
+| `bun run dev`    | Start dev server             |
+| `bun run build`  | Typecheck + production build |
+| `bun run format` | Format with Biome            |
+| `bun run lint`   | Lint with oxlint             |
+| `bun run check`  | Format + lint + typecheck    |
 
-## Architecture
+## Documentation
 
-```
-src/
-  services/        → Transport layer (WebSocket, framework-agnostic)
-  normalizer/      → Data layer (DEX normalizers, parsers, formatters)
-  atoms/           → Raw state (Jotai atoms, numbers not formatted strings)
-  hooks/           → Orchestration (Tier 1: global data, Tier 2: feature-specific)
-  providers/       → Mount global hooks
-  components/      → UI (render only, no business logic)
-```
+- [Architecture](docs/architecture.md) - layers, data flow, state management
+- [WebSocket Design](docs/websocket.md) - protocol-agnostic client, reconnect reconciliation
+- [Adding a New DEX](docs/adding-a-dex.md) - step-by-step integration guide
+- [HyperLiquid](docs/dex/hyperliquid.md) - signing, universe ordering, deposits
+- [Extended](docs/dex/extended.md) - StarkNet signing, order book accumulator
 
 ## Contributing
 
