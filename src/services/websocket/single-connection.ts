@@ -140,7 +140,7 @@ class TradingWebSocket {
 			this.ws.onclose = null;
 			this.ws.onerror = null;
 
-			// Bug fix #5: check readyState before closing
+			// Only close if socket is still open or connecting
 			if (
 				this.ws.readyState === WebSocket.OPEN ||
 				this.ws.readyState === WebSocket.CONNECTING
@@ -232,7 +232,7 @@ class TradingWebSocket {
 		if (!this.subscribers.has(key)) {
 			this.subscribers.set(key, new Set());
 			this.channelDescriptors.set(key, descriptor);
-			// Bug fix #4: send subscription directly, bypass queue
+			// Send subscription directly, bypass queue
 			this.sendDirect(this.protocol.formatSubscribe(descriptor));
 		}
 
@@ -392,11 +392,11 @@ class TradingWebSocket {
 			this.channelDescriptors.delete(key);
 
 			if (descriptor) {
-				// Bug fix #4: unsubscribe directly, bypass queue
+				// Unsubscribe directly, bypass queue
 				this.sendDirect(this.protocol.formatUnsubscribe(descriptor));
 			}
 
-			// Bug fix #6: delayed cache eviction instead of immediate delete
+			// Delayed cache eviction prevents loading flash on quick remount
 			this.cacheEvictionTimers.set(
 				key,
 				setTimeout(() => {
@@ -425,7 +425,7 @@ class TradingWebSocket {
 	private createConnection() {
 		this.setState('connecting');
 
-		// Bug fix #1: catch construction failures so connectLock isn't stuck
+		// Catch construction failures so connectLock isn't stuck
 		let ws: WebSocket;
 		try {
 			ws = new WebSocket(this.config.url);
@@ -650,7 +650,7 @@ class TradingWebSocket {
 		this.stopHeartbeat();
 
 		this.heartbeatTimer = setInterval(() => {
-			// Bug fix #2: send ping directly, never queue
+			// Send ping directly, never queue
 			if (this.ws?.readyState === WebSocket.OPEN) {
 				this.pingSentAt = Date.now();
 				this.ws.send(JSON.stringify(this.protocol.formatPing()));
@@ -671,7 +671,7 @@ class TradingWebSocket {
 		this.clearPongTimeout();
 		this.pongTimer = setTimeout(() => {
 			console.warn('[TradingWS] Pong timeout, closing connection');
-			// Bug fix #5: check readyState before closing
+			// Only close if socket is still open
 			if (this.ws?.readyState === WebSocket.OPEN) {
 				this.ws.close(CLOSE_CODES.PONG_TIMEOUT, 'pong timeout');
 			}
@@ -721,7 +721,7 @@ class TradingWebSocket {
 		this.setState('disconnected');
 	};
 
-	// Bug fix #3: only reconnect if actually stale, not on every tab focus
+	// Only reconnect if actually stale, not on every tab focus
 	private handleVisibilityChange = () => {
 		if (document.visibilityState === 'hidden') {
 			this.hiddenSince = Date.now();

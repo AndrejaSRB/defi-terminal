@@ -17,14 +17,26 @@ export function aggKey(level: AggregationLevel): string {
  *
  * Raw tick = 10^(floor(log10(midPrice)) − 4), matching HL's
  * default 5-significant-figure precision.
+ *
+ * Memoized: levels only change when the price crosses an order of magnitude,
+ * so the same array is returned for most price ticks. Prevents downstream
+ * re-renders from new object references.
  */
+let cachedRawTick = 0;
+let cachedLevels: AggregationLevel[] = [];
+
 export function getAggregationLevels(midPrice: number): AggregationLevel[] {
 	if (midPrice <= 0)
 		return [{ label: 'Raw', tickSize: 0, nSigFigs: null, mantissa: null }];
 
 	const rawTick = Math.pow(10, Math.floor(Math.log10(midPrice)) - 4);
 
-	return [
+	if (rawTick === cachedRawTick && cachedLevels.length > 0) {
+		return cachedLevels;
+	}
+	cachedRawTick = rawTick;
+
+	cachedLevels = [
 		{
 			label: formatTick(rawTick),
 			tickSize: rawTick,
@@ -62,4 +74,5 @@ export function getAggregationLevels(midPrice: number): AggregationLevel[] {
 			mantissa: null,
 		},
 	];
+	return cachedLevels;
 }
